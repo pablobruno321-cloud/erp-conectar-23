@@ -1,0 +1,22 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pip install -r requirements.txt"
+  },
+  "deploy": {
+    "startCommand": "gunicorn --workers 4 --bind 0.0.0.0:$PORT erp_app.app:app",
+    "numReplicas": 1
+  },
+  "env": {
+    "SECRET_KEY": {
+      "description": "Clave secreta para Flask",
+      "value": "w5pnEnaifidSqjTv2pNysmeDvWKqa26CfCZhcKwER52lmGiCmUbey60PSk0n6AgZVMg"
+    },
+    "FLASK_ENV": {
+      "description": "Ambiente de ejecución",
+      "value": "production"
+    }
+  }
+}
+
