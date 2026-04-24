@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{% if cobranza %}Editar Cobranza{% else %}Nueva Cobranza{% endif %} - ERP{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>{% if cobranza %}Editar Cobranza{% else %}Nueva Cobranza{% endif %}</h2>
+</div>
+
+{% if error %}
+<div class="error" style="background: #fed7d7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+    {{ error }}
+</div>
+{% endif %}
+
+<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 800px;">
+    <form method="POST">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="cliente_id">Cliente *</label>
+                <select id="cliente_id" name="cliente_id" required>
+                    <option value="">Seleccionar cliente</option>
+                    {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" {% if cobranza and cobranza.cliente_id == cliente.id %}selected{% endif %}>{{ cliente.nombre }} (Deuda: ${{ "%.2f"|format(cliente.saldo) }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="monto">Monto *</label>
+                <input type="number" id="monto" name="monto" step="0.01" required style="width: 100%;" value="{{ cobranza.monto if cobranza else '' }}">
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="metodo">Método de Pago</label>
+                <select id="metodo" name="metodo" style="width: 100%;">
+                    <option value="">Seleccionar</option>
+                    <option value="Efectivo" {% if cobranza and cobranza.metodo == 'Efectivo' %}selected{% endif %}>Efectivo</option>
+                    <option value="Transferencia" {% if cobranza and cobranza.metodo == 'Transferencia' %}selected{% endif %}>Transferencia</option>
+                    <option value="Cheque" {% if cobranza and cobranza.metodo == 'Cheque' %}selected{% endif %}>Cheque</option>
+                    <option value="Tarjeta" {% if cobranza and cobranza.metodo == 'Tarjeta' %}selected{% endif %}>Tarjeta</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="referencia">Referencia (Comprobante)</label>
+                <input type="text" id="referencia" name="referencia" style="width: 100%;" value="{{ cobranza.referencia if cobranza else '' }}">
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="numero_comprobante">Número de Comprobante</label>
+                <input type="text" id="numero_comprobante" name="numero_comprobante" style="width: 100%;" value="{{ cobranza.numero_comprobante if cobranza else '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="tipo_comprobante">Tipo de Comprobante</label>
+                <select id="tipo_comprobante" name="tipo_comprobante" style="width: 100%;">
+                    <option value="">Seleccionar</option>
+                    <option value="Factura" {% if cobranza and cobranza.tipo_comprobante == 'Factura' %}selected{% endif %}>Factura</option>
+                    <option value="Recibo" {% if cobranza and cobranza.tipo_comprobante == 'Recibo' %}selected{% endif %}>Recibo</option>
+                    <option value="Nota de Crédito" {% if cobranza and cobranza.tipo_comprobante == 'Nota de Crédito' %}selected{% endif %}>Nota de Crédito</option>
+                    <option value="Otro" {% if cobranza and cobranza.tipo_comprobante == 'Otro' %}selected{% endif %}>Otro</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="notas">Notas</label>
+            <textarea id="notas" name="notas" rows="4" style="width: 100%;">{{ cobranza.notas if cobranza else '' }}</textarea>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="submit" class="btn btn-success">{{ 'Guardar Cambios' if cobranza else 'Registrar Cobranza' }}</button>
+            <a href="{{ url_for('listar_cobranzas') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

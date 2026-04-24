@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}{% if pago %}Editar Pago{% else %}Nuevo Pago{% endif %} - ERP{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>{% if pago %}Editar Pago{% else %}Nuevo Pago{% endif %} a Proveedor</h2>
+</div>
+
+{% if error %}
+<div class="error" style="background: #fed7d7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+    {{ error }}
+</div>
+{% endif %}
+
+<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 800px;">
+    <form method="POST">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="proveedor_id">Proveedor *</label>
+                <select id="proveedor_id" name="proveedor_id" required>
+                    <option value="">Seleccionar proveedor</option>
+                    {% for proveedor in proveedores %}
+                    <option value="{{ proveedor.id }}" {% if pago and pago.proveedor_id == proveedor.id %}selected{% endif %}>{{ proveedor.nombre }} (Deuda: ${{ "%.2f"|format(proveedor.saldo) }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="monto">Monto *</label>
+                <input type="number" id="monto" name="monto" step="0.01" required style="width: 100%;" value="{{ pago.monto if pago else '' }}">
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="metodo">Método de Pago</label>
+                <select id="metodo" name="metodo" style="width: 100%;">
+                    <option value="">Seleccionar</option>
+                    <option value="Efectivo" {% if pago and pago.metodo == 'Efectivo' %}selected{% endif %}>Efectivo</option>
+                    <option value="Transferencia" {% if pago and pago.metodo == 'Transferencia' %}selected{% endif %}>Transferencia</option>
+                    <option value="Cheque" {% if pago and pago.metodo == 'Cheque' %}selected{% endif %}>Cheque</option>
+                    <option value="Tarjeta" {% if pago and pago.metodo == 'Tarjeta' %}selected{% endif %}>Tarjeta</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="referencia">Referencia (Comprobante)</label>
+                <input type="text" id="referencia" name="referencia" style="width: 100%;" value="{{ pago.referencia if pago else '' }}">
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="numero_comprobante">Número de Comprobante</label>
+                <input type="text" id="numero_comprobante" name="numero_comprobante" style="width: 100%;" value="{{ pago.numero_comprobante if pago else '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="tipo_comprobante">Tipo de Comprobante</label>
+                <select id="tipo_comprobante" name="tipo_comprobante" style="width: 100%;">
+                    <option value="">Seleccionar</option>
+                    <option value="Factura" {% if pago and pago.tipo_comprobante == 'Factura' %}selected{% endif %}>Factura</option>
+                    <option value="Recibo" {% if pago and pago.tipo_comprobante == 'Recibo' %}selected{% endif %}>Recibo</option>
+                    <option value="Nota de Crédito" {% if pago and pago.tipo_comprobante == 'Nota de Crédito' %}selected{% endif %}>Nota de Crédito</option>
+                    <option value="Otro" {% if pago and pago.tipo_comprobante == 'Otro' %}selected{% endif %}>Otro</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="pedido_id">Pedido Relacionado</label>
+                <select id="pedido_id" name="pedido_id" style="width: 100%;">
+                    <option value="">Seleccionar pedido (opcional)</option>
+                    {% for pedido in pedidos %}
+                    <option value="{{ pedido.id }}" {% if pago and pago.pedido_id == pedido.id %}selected{% endif %}>Pedido {{ pedido.numero }} - {{ pedido.cliente.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="cliente_id">Cliente (quien paga)</label>
+                <select id="cliente_id" name="cliente_id" style="width: 100%;">
+                    <option value="">Seleccionar cliente</option>
+                    {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" {% if pago and pago.cliente_id == cliente.id %}selected{% endif %}>{{ cliente.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="notas">Notas</label>
+            <textarea id="notas" name="notas" rows="4" style="width: 100%;">{{ pago.notas if pago else '' }}</textarea>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="submit" class="btn btn-success">{{ 'Guardar Cambios' if pago else 'Registrar Pago' }}</button>
+            <a href="{{ url_for('listar_pagos') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

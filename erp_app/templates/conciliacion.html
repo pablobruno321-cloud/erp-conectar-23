@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Conciliación de Pagos y Cobranzas - ERP{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>Conciliación de Pagos y Cobranzas</h2>
+</div>
+
+<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
+    <h3>Resumen de Conciliación</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 5px;">
+            <h4>Cuentas por Cobrar</h4>
+            <p><strong>Total Facturado:</strong> ${{ total_facturado|eur }}</p>
+            <p><strong>Total Cobrado:</strong> ${{ total_cobrado|eur }}</p>
+            <p><strong>Saldo Pendiente:</strong> ${{ saldo_pendiente|eur }}</p>
+        </div>
+        <div style="background: #fff3e0; padding: 15px; border-radius: 5px;">
+            <h4>Cuentas por Pagar</h4>
+            <p><strong>Total Facturado:</strong> ${{ total_facturado_proveedores|eur }}</p>
+            <p><strong>Total Pagado:</strong> ${{ total_pagado|eur }}</p>
+            <p><strong>Saldo Pendiente:</strong> ${{ saldo_pendiente_proveedores|eur }}</p>
+        </div>
+    </div>
+</div>
+
+<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <h3>Cobranzas sin Conciliar</h3>
+    {% if cobranzas_sin_conciliar %}
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #f8f9fa;">
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Monto</th>
+                <th>Método</th>
+                <th>Referencia</th>
+                <th>Comprobante</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cobranza in cobranzas_sin_conciliar %}
+            <tr>
+                <td>{{ cobranza.fecha_cobranza.strftime('%d/%m/%Y') if cobranza.fecha_cobranza else 'N/A' }}</td>
+                <td>{{ cobranza.cliente.nombre }}</td>
+                <td>${{ cobranza.monto|eur }}</td>
+                <td>{{ cobranza.metodo or 'N/A' }}</td>
+                <td>{{ cobranza.referencia or 'N/A' }}</td>
+                <td>{{ cobranza.numero_comprobante or 'N/A' }}</td>
+                <td>
+                    <a href="{{ url_for('conciliar_cobranza', cobranza_id=cobranza.id) }}" class="btn btn-sm btn-primary">Conciliar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No hay cobranzas sin conciliar.</p>
+    {% endif %}
+</div>
+
+<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 20px;">
+    <h3>Pagos sin Conciliar</h3>
+    {% if pagos_sin_conciliar %}
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #f8f9fa;">
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>Monto</th>
+                <th>Método</th>
+                <th>Referencia</th>
+                <th>Comprobante</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pago in pagos_sin_conciliar %}
+            <tr>
+                <td>{{ pago.fecha_pago.strftime('%d/%m/%Y') if pago.fecha_pago else 'N/A' }}</td>
+                <td>{{ pago.proveedor.nombre }}</td>
+                <td>${{ pago.monto|eur }}</td>
+                <td>{{ pago.metodo or 'N/A' }}</td>
+                <td>{{ pago.referencia or 'N/A' }}</td>
+                <td>{{ pago.numero_comprobante or 'N/A' }}</td>
+                <td>
+                    <a href="{{ url_for('conciliar_pago', pago_id=pago.id) }}" class="btn btn-sm btn-primary">Conciliar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No hay pagos sin conciliar.</p>
+    {% endif %}
+</div>
+{% endblock %}
