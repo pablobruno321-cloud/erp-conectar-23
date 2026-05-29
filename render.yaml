@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: erp-conectar23
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 120 wsgi:app
+    healthCheckPath: /login
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: FLASK_ENV
+        value: production
+      - key: ALLOW_REGISTRATION
+        value: false
+      - key: SESSION_COOKIE_SECURE
+        value: true
+      - key: ERP_DATA_DIR
+        value: /tmp/erp_data
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false

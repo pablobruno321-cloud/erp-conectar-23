@@ -153,9 +153,11 @@
             <button type="submit" class="btn-login">Ingresar</button>
         </form>
         
+        {% if allow_registro %}
         <div class="signup-link">
             <p>¿No tienes cuenta? <a href="{{ url_for('registro') }}">Regístrate aquí</a></p>
         </div>
+        {% endif %}
     </div>
 </body>
 </html>

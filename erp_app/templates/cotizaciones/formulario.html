@@ -7,102 +7,144 @@
     <h2>{% if cotizacion %}Editar Cotización{% else %}Nueva Cotización{% endif %}</h2>
 </div>
 
-<div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-    <form method="POST">
-        <div class="form-group">
-            <label for="producto_id">Producto *</label>
-            <select name="producto_id" id="producto_id" required style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
-                <option value="">Seleccionar producto...</option>
-                {% for prod in productos %}
-                <option value="{{ prod.id }}" {% if cotizacion and cotizacion.producto_id == prod.id %}selected{% endif %}>
-                    {{ prod.nombre }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+{% if error %}
+<div style="background: #fed7d7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">{{ error }}</div>
+{% endif %}
+
+<div style="background: white; padding: 30px; border-radius: 10px; max-width: 800px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <form method="POST" id="formCotizacion">
+        {% if cotizacion %}
+        <input type="hidden" name="producto_id" value="{{ cotizacion.producto_id }}">
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
             <div class="form-group">
-                <label for="fecha_desde">Fecha Desde *</label>
-                <input type="date" name="fecha_desde" id="fecha_desde" 
-                    value="{{ cotizacion.fecha_desde.strftime('%Y-%m-%d') if cotizacion else '' }}" 
-                    required style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                <label>Vigencia Desde *</label>
+                <input type="date" name="fecha_desde" required
+                    value="{{ cotizacion.fecha_desde.strftime('%Y-%m-%d') if cotizacion else '' }}">
             </div>
-            
             <div class="form-group">
-                <label for="fecha_hasta">Fecha Hasta *</label>
-                <input type="date" name="fecha_hasta" id="fecha_hasta" 
-                    value="{{ cotizacion.fecha_hasta.strftime('%Y-%m-%d') if cotizacion else '' }}" 
-                    required style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                <label>Vigencia Hasta *</label>
+                <input type="date" name="fecha_hasta" required
+                    value="{{ cotizacion.fecha_hasta.strftime('%Y-%m-%d') if cotizacion else '' }}">
             </div>
         </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
             <div class="form-group">
-                <label for="costo_unitario">Costo Unitario $ *</label>
-                <input type="number" name="costo_unitario" id="costo_unitario" 
-                    value="{{ "%.2f"|format(cotizacion.costo_unitario) if cotizacion else '' }}" 
-                    step="0.01" min="0" required 
-                    style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;"
-                    onchange="calcularPrecioVenta()">
+                <label>Proveedor *</label>
+                <select name="proveedor_id" id="proveedor_id" {% if cotizacion %}disabled{% else %}required{% endif %} onchange="cargarOpciones('fruta')">
+                    <option value="">—</option>
+                    <option value="__nuevo__" style="background:#fef3c7;font-weight:bold;">Cargar nuevo</option>
+                    {% for pr in proveedores %}
+                    <option value="{{ pr.id }}" {% if cotizacion and cotizacion.producto.proveedor_id == pr.id %}selected{% endif %}>{{ pr.nombre }}</option>
+                    {% endfor %}
+                </select>
+                {% if cotizacion %}<input type="hidden" name="proveedor_id" value="{{ cotizacion.producto.proveedor_id }}">{% endif %}
             </div>
-            
+            <div class="form-group"><label>Fruta *</label><select name="fruta" id="fruta" required onchange="cargarOpciones('variedad')"><option value="">—</option></select></div>
+            <div class="form-group"><label>Variedad</label><select name="variedad" id="variedad" onchange="cargarOpciones('clasificacion')"><option value="">—</option></select></div>
+            <div class="form-group"><label>Clasificación</label><select name="clasificacion" id="clasificacion" onchange="cargarOpciones('envase')"><option value="">—</option></select></div>
+            <div class="form-group"><label>Envase</label><select name="envase" id="envase" onchange="cargarOpciones('kilogramo')"><option value="">—</option></select></div>
+            <div class="form-group"><label>Kg</label><select name="kilogramo" id="kilogramo" onchange="cargarOpciones('marca')"><option value="">—</option></select></div>
+            <div class="form-group"><label>Marca</label><select name="marca" id="marca"><option value="">—</option></select></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
             <div class="form-group">
-                <label for="margen_ganancia">Margen de Ganancia % *</label>
-                <input type="number" name="margen_ganancia" id="margen_ganancia" 
-                    value="{{ cotizacion.margen_ganancia if cotizacion else margen_default }}" 
-                    step="0.1" min="0" required 
-                    style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px;"
-                    onchange="calcularPrecioVenta()">
+                <label>Costo unitario $ *</label>
+                <input type="text" name="costo_unitario" id="costo_unitario" data-numero required
+                    class="inp-moneda" style="text-align:right"
+                    value="{{ formatear_numero_ar(cotizacion.costo_unitario) if cotizacion else '' }}" oninput="calcularMargen()">
+            </div>
+            <div class="form-group">
+                <label>Precio unitario $ *</label>
+                <input type="text" name="precio_unitario" id="precio_unitario" data-numero required
+                    class="inp-moneda" style="text-align:right"
+                    value="{{ formatear_numero_ar(cotizacion.precio_unitario) if cotizacion else '' }}" oninput="calcularMargen()">
+            </div>
+            <div class="form-group">
+                <label>Margen % (calculado)</label>
+                <div id="margen_display" style="padding: 11px; background: #f7fafc; border-radius: 6px; font-weight: 600; color: #667eea;">0 %</div>
             </div>
         </div>
-        
-        <div class="form-group">
-            <label>Precio de Venta $ (Calculado)</label>
-            <div style="padding: 10px; background: #f7fafc; border-radius: 6px; font-size: 13px; font-weight: 600; color: #667eea;">
-                $ <span id="precio_venta_display">{{ "%.2f"|format(cotizacion.precio_venta) if cotizacion else '0,00' }}</span>
-            </div>
-        </div>
-        
+
         <div style="display: flex; gap: 10px; margin-top: 25px;">
-            <button type="submit" class="btn btn-success" style="flex: 1; padding: 12px;">
-                {% if cotizacion %}Guardar Cambios{% else %}Crear Cotización{% endif %}
-            </button>
-            <a href="{{ url_for('listar_cotizaciones') }}" class="btn" style="flex: 1; padding: 12px; text-align: center;">Cancelar</a>
+            <button type="submit" class="btn btn-success">Guardar</button>
+            <a href="{{ url_for('listar_cotizaciones') }}" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
 </div>
+{% endblock %}
 
-<style>
-.form-group {
-    margin-bottom: 15px;
-}
-.form-group label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 500;
-    font-size: 13px;
-    color: #2d3748;
-}
-</style>
-
+{% block extra_js %}
 <script>
-function calcularPrecioVenta() {
-    const costo = parseFloat(document.getElementById('costo_unitario').value) || 0;
-    const margen = parseFloat(document.getElementById('margen_ganancia').value) || 0;
-    
-    const precio_venta = costo * (1 + margen / 100);
-    
-    // Formatear a europeo
-    const formatter = new Intl.NumberFormat('es-AR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
-    
-    document.getElementById('precio_venta_display').textContent = formatter.format(precio_venta);
+// Se ejecuta al final del body (después de window.ERP en base.html)
+const VALORES_INICIALES = {% if cotizacion %}{
+    fruta: {{ cotizacion.producto.fruta|tojson }},
+    variedad: {{ (cotizacion.producto.variedad or '')|tojson }},
+    clasificacion: {{ (cotizacion.producto.clasificacion or '')|tojson }},
+    envase: {{ (cotizacion.producto.envase or '')|tojson }},
+    kilogramo: {{ (cotizacion.producto.kilogramo or '')|tojson }},
+    marca: {{ (cotizacion.producto.marca or '')|tojson }}
+}{% else %}null{% endif %};
+
+document.getElementById('proveedor_id')?.addEventListener('change', function() {
+    if (this.value === '__nuevo__') { window.location.href = '{{ url_for("nuevo_proveedor") }}'; }
+});
+
+function calcularMargen() {
+    const c = window.ERP ? ERP.getInputNumero(document.getElementById('costo_unitario')) : (parseFloat(document.getElementById('costo_unitario').value) || 0);
+    const p = window.ERP ? ERP.getInputNumero(document.getElementById('precio_unitario')) : (parseFloat(document.getElementById('precio_unitario').value) || 0);
+    let m = 0;
+    if (c > 0) m = ((p - c) / c) * 100;
+    const txt = (window.ERP ? ERP.formatoNumero(m, 2) : (m.toFixed(2))) + ' %';
+    document.getElementById('margen_display').textContent = txt;
 }
 
-// Calcular al cargar si existe valor
-window.addEventListener('load', calcularPrecioVenta);
+function paramsHasta(campo) {
+    const p = new URLSearchParams();
+    const prov = document.getElementById('proveedor_id');
+    if (prov && prov.value && prov.value !== '__nuevo__') p.set('proveedor_id', prov.value);
+    const orden = ['fruta','variedad','clasificacion','envase','kilogramo'];
+    for (const c of orden) {
+        if (c === campo) break;
+        const el = document.getElementById(c);
+        if (el && el.value) p.set(c, el.value);
+    }
+    p.set('campo', campo);
+    return p;
+}
+
+function llenarSelect(id, valores, seleccionado) {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">—</option>';
+    valores.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = v;
+        if (v === seleccionado) o.selected = true;
+        sel.appendChild(o);
+    });
+    if (seleccionado && !valores.includes(seleccionado)) {
+        const o = document.createElement('option');
+        o.value = seleccionado; o.textContent = seleccionado; o.selected = true;
+        sel.appendChild(o);
+    }
+}
+
+async function cargarOpciones(campo) {
+    const res = await fetch('/api/productos/opciones?' + paramsHasta(campo));
+    const vals = await res.json();
+    const sel = VALORES_INICIALES ? VALORES_INICIALES[campo] : '';
+    llenarSelect(campo, vals, sel || '');
+    const orden = ['fruta','variedad','clasificacion','envase','kilogramo','marca'];
+    const i = orden.indexOf(campo);
+    if (i >= 0 && i < orden.length - 1) await cargarOpciones(orden[i + 1]);
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    calcularMargen();
+    if (VALORES_INICIALES) await cargarOpciones('fruta');
+});
 </script>
 {% endblock %}

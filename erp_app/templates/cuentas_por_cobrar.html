@@ -11,19 +11,19 @@
 <div class="stats">
     <div class="stat-card">
         <h3>Total Venta</h3>
-        <div class="value">${{ "%.0f"|format(total_venta) }}</div>
+        <div class="value">${{ total_venta | formato_entero  }}</div>
     </div>
     <div class="stat-card" style="border-left-color: #48bb78;">
         <h3>Total Cobrado</h3>
-        <div class="value">${{ "%.0f"|format(total_cobrado) }}</div>
+        <div class="value">${{ total_cobrado | formato_entero  }}</div>
     </div>
     <div class="stat-card" style="border-left-color: #f56565;">
         <h3>Total Deuda</h3>
-        <div class="value">${{ "%.0f"|format(total_saldo) }}</div>
+        <div class="value">${{ total_saldo | formato_entero  }}</div>
     </div>
     <div class="stat-card" style="border-left-color: #ed8936;">
         <h3>% Cobrado</h3>
-        <div class="value">{{ "%.1f"|format((total_cobrado / total_venta * 100) if total_venta > 0 else 0) }}%</div>
+        <div class="value">{{ (total_cobrado / total_venta * 100) if total_venta > 0 else 0 | formato_porcentaje  }}%</div>
     </div>
 </div>
 
@@ -53,7 +53,7 @@
                 <td style="padding: 12px; text-align: center;">
                     <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 20px;">
                         <div style="background: {% if item.porcentaje_cobrado == 100 %}#48bb78{% elif item.porcentaje_cobrado >= 50 %}#ed8936{% else %}#f56565{% endif %}; width: {{ item.porcentaje_cobrado }}%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: 600;">
-                            {% if item.porcentaje_cobrado > 5 %}{{ "%.0f"|format(item.porcentaje_cobrado) }}%{% endif %}
+                            {% if item.porcentaje_cobrado > 5 %}{{ item.porcentaje_cobrado | formato_entero  }}%{% endif %}
                         </div>
                     </div>
                 </td>
@@ -63,10 +63,10 @@
         <tfoot>
             <tr style="background: #edf2f7; border-top: 2px solid #e2e8f0; font-weight: 600; color: #2d3748;">
                 <td style="padding: 12px;">TOTAL</td>
-                <td style="padding: 12px; text-align: right;">${{ "%.0f"|format(total_venta) }}</td>
-                <td style="padding: 12px; text-align: right;">${{ "%.0f"|format(total_cobrado) }}</td>
-                <td style="padding: 12px; text-align: right; color: #f56565;">${{ "%.0f"|format(total_saldo) }}</td>
-                <td style="padding: 12px; text-align: center;">{{ "%.1f"|format((total_cobrado / total_venta * 100) if total_venta > 0 else 0) }}%</td>
+                <td style="padding: 12px; text-align: right;">${{ total_venta | formato_entero  }}</td>
+                <td style="padding: 12px; text-align: right;">${{ total_cobrado | formato_entero  }}</td>
+                <td style="padding: 12px; text-align: right; color: #f56565;">${{ total_saldo | formato_entero  }}</td>
+                <td style="padding: 12px; text-align: center;">{{ (total_cobrado / total_venta * 100) if total_venta > 0 else 0 | formato_porcentaje  }}%</td>
             </tr>
         </tfoot>
     </table>

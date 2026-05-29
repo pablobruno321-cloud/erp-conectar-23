@@ -1,262 +1,885 @@
 {% extends "base.html" %}
 
-{% block title %}{% if pedido %}Editar Pedido{% else %}Nuevo Pedido{% endif %} - ERP{% endblock %}
+{% block title %}{% if solo_lectura %}Ver Pedido {{ pedido.numero }}{% elif pedido %}Editar Pedido{% else %}Nuevo Pedido{% endif %} - ERP{% endblock %}
 
 {% block extra_css %}
 <style>
-    .items-table {
-        margin-bottom: 20px;
-    }
-    
-    .items-table input,
-    .items-table select {
-        font-size: 13px;
-        padding: 8px;
-    }
-    
-    .item-row {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr auto;
-        gap: 10px;
-        margin-bottom: 10px;
-        background: #f7fafc;
-        padding: 10px;
-        border-radius: 5px;
-        align-items: end;
-    }
-    
-    .btn-remove {
-        background: #f56565;
-        padding: 8px 12px;
-        font-size: 12px;
-    }
+.pedido-seccion {
+    border-radius: 10px;
+    padding: 18px 20px 20px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+}
+.pedido-seccion h3 {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid;
+    letter-spacing: 0.2px;
+}
+.pedido-seccion--cliente {
+    background: #ebf8ff;
+    border-color: #bee3f8;
+}
+.pedido-seccion--cliente h3 { color: #2c5282; border-color: #90cdf4; }
+.pedido-seccion--logistica {
+    background: #faf5ff;
+    border-color: #e9d8fd;
+}
+.pedido-seccion--logistica h3 { color: #553c9a; border-color: #d6bcfa; }
+.pedido-seccion--remito {
+    background: #fffaf0;
+    border-color: #feebc8;
+}
+.pedido-seccion--remito h3 { color: #9c4221; border-color: #fbd38d; }
+.pedido-adjunto-remito { flex: 0 0 auto; min-width: 14rem; }
+.pedido-adjunto-remito label { display: block; margin-bottom: 4px; font-weight: 600; color: #4a5568; }
+.pedido-adjunto-remito input[type="file"] { font-size: 13px; max-width: 100%; }
+.pedido-adjunto-remito .adjunto-actual {
+    display: flex; flex-direction: column; gap: 6px; font-size: 13px;
+}
+.pedido-adjunto-remito .adjunto-actual a {
+    color: #2b6cb0; font-weight: 600; word-break: break-all;
+}
+.pedido-adjunto-remito .quitar-adjunto { font-size: 12px; color: #c53030; }
+.pedido-seccion--entregado {
+    background: #f0fff4;
+    border-color: #c6f6d5;
+}
+.pedido-seccion--entregado h3 { color: #276749; border-color: #9ae6b4; }
+.pedido-seccion--productos {
+    background: #eef2ff;
+    border-color: #c3dafe;
+}
+.pedido-seccion--productos h3 { color: #434190; border-color: #a3bffa; }
+.pedido-seccion label { font-weight: 600; color: #4a5568; }
+.pedido-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 28px;
+    align-items: flex-end;
+    margin-bottom: 25px;
+}
+.pedido-cabecera .campo-numero input { width: 5.5rem; max-width: 100%; }
+.pedido-fila-campos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px 24px;
+    align-items: flex-end;
+}
+.pedido-fila-campos .campo-ancho { flex: 0 0 auto; }
+.pedido-fila-campos .campo-fecha { flex: 0 0 auto; }
+.pedido-fila-campos .campo-fecha input[type="date"],
+.pedido-cabecera .campo-fecha input[type="date"] {
+    width: 11.5rem;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+.pedido-campo input,
+.pedido-campo select {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+.w-ped-sm { width: 7rem; }
+.w-ped-md { width: 11rem; }
+.w-ped-lg { width: 15rem; }
+.w-ped-xl { width: 20rem; }
+.pedido-datos-cliente {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    align-items: flex-end;
+}
+#lineasContainer { display: flex; flex-direction: column; gap: 6px; }
+.pedido-error-proveedor {
+    display: none;
+    background: #fed7d7;
+    color: #c53030;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-weight: 700;
+    border: 1px solid #fc8181;
+}
+.linea-producto {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 8px 6px;
+    background: rgba(255,255,255,0.75);
+    border-radius: 6px;
+    align-items: flex-end;
+    font-size: 11px;
+    border: 1px solid #e2e8f0;
+    overflow-x: auto;
+}
+.linea-producto > div { flex: 0 0 auto; }
+.lineas-producto-header,
+.linea-producto {
+    --w-prov: 7.2rem;
+    --w-fruta: 5.8rem;
+    --w-var: 5.8rem;
+    --w-cla: 6rem;
+    --w-env: 5rem;
+    --w-kg: 4rem;
+    --w-mar: 5.5rem;
+    --w-pal: 4rem;
+    --w-bul: 4.2rem;
+    --w-cu: 5.2rem;
+    --w-pvu: 5.2rem;
+    --w-ct: 5.5rem;
+    --w-pvt: 5.5rem;
+    --w-rtd: 5.2rem;
+    --w-cotiz: 4rem;
+    --w-del: 2.2rem;
+}
+.lineas-producto-header {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 0 6px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    overflow-x: auto;
+}
+.lineas-producto-header > div { flex: 0 0 auto; white-space: nowrap; }
+.lineas-producto-header .c-prov { width: var(--w-prov); }
+.lineas-producto-header .c-fruta { width: var(--w-fruta); }
+.lineas-producto-header .c-var { width: var(--w-var); }
+.lineas-producto-header .c-cla { width: var(--w-cla); }
+.lineas-producto-header .c-env { width: var(--w-env); }
+.lineas-producto-header .c-kg { width: var(--w-kg); }
+.lineas-producto-header .c-mar { width: var(--w-mar); }
+.lineas-producto-header .c-pal { width: var(--w-pal); }
+.lineas-producto-header .c-bul { width: var(--w-bul); }
+.lineas-producto-header .c-cu { width: var(--w-cu); }
+.lineas-producto-header .c-pvu { width: var(--w-pvu); }
+.lineas-producto-header .c-ct { width: var(--w-ct); }
+.lineas-producto-header .c-pvt { width: var(--w-pvt); }
+.lineas-producto-header .c-rtd { width: var(--w-rtd); }
+.lineas-producto-header .c-cotiz { width: var(--w-cotiz); }
+.lineas-producto-header .c-del { width: var(--w-del); }
+.linea-producto .c-prov { width: var(--w-prov); }
+.linea-producto .c-fruta { width: var(--w-fruta); }
+.linea-producto .c-var { width: var(--w-var); }
+.linea-producto .c-cla { width: var(--w-cla); }
+.linea-producto .c-env { width: var(--w-env); }
+.linea-producto .c-kg { width: var(--w-kg); }
+.linea-producto .c-mar { width: var(--w-mar); }
+.linea-producto .c-pal { width: var(--w-pal); }
+.linea-producto .c-bul { width: var(--w-bul); }
+.linea-producto .c-cu,
+.linea-producto .c-pvu { width: var(--w-cu); }
+.linea-producto .c-pvu { width: var(--w-pvu); }
+.linea-producto .c-ct { width: var(--w-ct); }
+.linea-producto .c-pvt { width: var(--w-pvt); }
+.linea-producto .c-rtd { width: var(--w-rtd); }
+.linea-producto .c-del { width: var(--w-del); padding-bottom: 2px; }
+.linea-producto .c-cotiz { width: var(--w-cotiz); min-width: var(--w-cotiz); align-self: center; }
+.linea-producto label { display: none; }
+.linea-producto select,
+.linea-producto input:not([type="hidden"]) { width: 100%; padding: 4px 5px; font-size: 10px; box-sizing: border-box; }
+.linea-producto .inp-costo-t,
+.linea-producto .inp-pv-t,
+.linea-producto .inp-rtdo { background: #edf2f7 !important; text-align: right; font-weight: 600; }
+.sin-cotiz { color: #c53030; font-size: 11px; }
+.pedido-solo-lectura input,
+.pedido-solo-lectura select,
+.pedido-solo-lectura textarea {
+    background: rgba(255,255,255,0.88) !important;
+    cursor: default;
+}
+.pedido-solo-lectura input[type="date"] { color: #2d3748; }
+.pedido-seccion--descuento {
+    background: #fffaf0;
+    border-color: #fbd38d;
+}
+.pedido-seccion--descuento h3 { color: #9c4221; border-color: #fbd38d; }
+.pedido-descuento-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 17px;
+    font-weight: 700;
+    color: #9c4221;
+    margin: 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #fbd38d;
+}
+.pedido-descuento-toggle input { width: 18px; height: 18px; cursor: pointer; }
+#panelDescuento {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 28px;
+    align-items: flex-end;
+}
+.pedido-descuento-total {
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.7);
+    border-radius: 8px;
+    border: 1px solid #fbd38d;
+    min-width: 140px;
+}
+.pedido-descuento-total label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #9c4221;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+.pedido-descuento-total strong {
+    font-size: 1.15rem;
+    color: #c05621;
+}
+.pedido-descuento-hint {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    color: #718096;
+    margin: 0;
+}
+.pedido-totales-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 30px;
+}
+.pedido-stat-card {
+    border-radius: 10px;
+    padding: 20px 22px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.pedido-stat-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.92);
+}
+.pedido-stat-card .value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #fff;
+}
+.pedido-stat-venta { background: #2b6cb0; }
+.pedido-stat-costo { background: #c53030; }
+.pedido-stat-comision { background: #276749; }
+.pedido-brutos-ref {
+    font-size: 11px;
+    color: #718096;
+    margin-top: 6px;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="header">
-    <h2>{% if pedido %}Editar Pedido{% else %}Nuevo Pedido{% endif %}</h2>
+    <h2>{% if solo_lectura %}Ver Pedido {{ pedido.numero }}{% elif pedido %}Editar Pedido{% else %}Nuevo Pedido{% endif %}</h2>
+    {% if solo_lectura %}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ url_for('editar_pedido', id=pedido.id) }}" class="btn">Editar</a>
+        <a href="{{ url_for('listar_pedidos') }}" class="btn btn-secondary">Volver</a>
+    </div>
+    {% endif %}
 </div>
 
-{% if error %}
-<div class="error" style="background: #fed7d7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-    {{ error }}
+{% if solo_lectura %}
+<div style="background:#ebf8ff;border:1px solid #90cdf4;color:#2c5282;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-weight:600;">
+    Modo solo lectura — para modificar use el botón <strong>Editar</strong>.
 </div>
 {% endif %}
 
-<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 900px;">
-    <form method="POST" id="pedidoForm">
-        
-        <h3 style="border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px;">Datos del Pedido</h3>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div class="form-group">
-                <label for="cliente_id">Cliente *</label>
-                <select id="cliente_id" name="cliente_id" required>
-                    <option value="">Seleccionar cliente</option>
-                    {% for cliente in clientes %}
-                    <option value="{{ cliente.id }}" {% if pedido and pedido.cliente_id == cliente.id %}selected{% endif %}>{{ cliente.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="prov_logistico_id">Proveedor Logístico</label>
-                <select id="prov_logistico_id" name="prov_logistico_id">
-                    <option value="">Seleccionar</option>
-                    {% for prov in prov_logisticos %}
-                    <option value="{{ prov.id }}" {% if pedido and pedido.prov_logistico_id == prov.id %}selected{% endif %}>{{ prov.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="mercado">Mercado</label>
-                <input type="text" id="mercado" name="mercado" value="{{ pedido.mercado if pedido else '' }}">
-            </div>
-            
-            <div class="form-group">
-                <label for="puesto">Puesto</label>
-                <input type="text" id="puesto" name="puesto" value="{{ pedido.puesto if pedido else '' }}">
-            </div>
-        </div>
-        
-        <h3 style="border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; margin-top: 30px;">Items del Pedido</h3>
-        
-        <div id="itemsContainer">
-            {% if pedido and pedido.items %}
-                {% for item in pedido.items %}
-                <div class="item-row">
-                    <div>
-                        <label>Producto</label>
-                        <select name="producto_{{ loop.index0 }}" class="producto-select">
-                            <option value="">Seleccionar producto</option>
-                            {% for producto in productos %}
-                            <option value="{{ producto.id }}" data-costo="{{ producto.costo_unitario }}" {% if item.producto_id == producto.id %}selected{% endif %}>
-                                {{ producto.nombre }} ({{ producto.proveedor.nombre }})
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label>Cantidad</label>
-                        <input type="number" name="cantidad_{{ loop.index0 }}" class="cantidad-input" step="0.01" value="{{ item.cantidad }}">
-                    </div>
-                    <div>
-                        <label>Precio Unit.</label>
-                        <input type="number" name="precio_unitario_{{ loop.index0 }}" class="precio-input" step="0.01" value="{{ item.precio_unitario }}">
-                    </div>
-                    <div>
-                        <label>Subtotal</label>
-                        <input type="number" class="subtotal-input" disabled readonly step="0.01" value="{{ item.subtotal }}">
-                    </div>
-                    <button type="button" class="btn btn-remove btn-remove-item">X</button>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="item-row">
-                    <div>
-                        <label>Producto</label>
-                        <select name="producto_0" class="producto-select">
-                            <option value="">Seleccionar producto</option>
-                            {% for producto in productos %}
-                            <option value="{{ producto.id }}" data-costo="{{ producto.costo_unitario }}">
-                                {{ producto.nombre }} ({{ producto.proveedor.nombre }})
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label>Cantidad</label>
-                        <input type="number" name="cantidad_0" class="cantidad-input" step="0.01" value="1">
-                    </div>
-                    <div>
-                        <label>Precio Unit.</label>
-                        <input type="number" name="precio_unitario_0" class="precio-input" step="0.01" value="0">
-                    </div>
-                    <div>
-                        <label>Subtotal</label>
-                        <input type="number" class="subtotal-input" disabled readonly step="0.01" value="0">
-                    </div>
-                    <button type="button" class="btn btn-remove btn-remove-item">X</button>
-                </div>
-            {% endif %}
-        </div>
-        
-        <button type="button" class="btn" onclick="agregarItem()" style="margin-top: 10px;">+ Agregar Producto</button>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 30px;">
-            <div class="stat-card">
-                <h3>Costo Total</h3>
-                <div class="value" id="costoTotal">${{ pedido.costo_total if pedido else '0.00' }}</div>
-            </div>
-            <div class="stat-card">
-                <h3>Precio Venta</h3>
-                <div class="value" id="precioVentaTotal">${{ pedido.precio_venta_total if pedido else '0.00' }}</div>
-            </div>
-            <div class="stat-card" style="border-left-color: #48bb78;">
-                <h3>Resultado</h3>
-                <div class="value" id="resultadoTotal">${{ pedido.resultado if pedido else '0.00' }}</div>
-            </div>
-        </div>
-        
-        <div style="display: flex; gap: 10px; margin-top: 30px;">
-            <button type="submit" class="btn btn-success">{{ 'Guardar Cambios' if pedido else 'Crear Pedido' }}</button>
-            <a href="{{ url_for('listar_pedidos') }}" class="btn btn-secondary">Cancelar</a>
-        </div>
-        
-        <input type="hidden" id="item_count" name="item_count" value="{% if pedido and pedido.items %}{{ pedido.items|length }}{% else %}1{% endif %}">
-    </form>
-</div>
+{% if error %}
+<div style="background:#fed7d7;padding:15px;border-radius:5px;margin-bottom:20px;">{{ error }}</div>
+{% endif %}
 
-<script>
-let itemCount = {% if pedido and pedido.items %}{{ pedido.items|length }}{% else %}1{% endif %};
+<div style="background:white;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);max-width:100%;overflow-x:auto;">
+{% if solo_lectura %}<div id="pedidoForm" class="pedido-solo-lectura">{% else %}<form method="POST" id="pedidoForm" enctype="multipart/form-data">{% endif %}
+    <div class="pedido-cabecera">
+        <div class="form-group campo-numero"><label>N° de Pedido</label>
+            <input type="text" readonly style="background:#f7fafc;font-weight:bold;" value="{{ pedido.numero if pedido else numero_sugerido }}"></div>
+        <div class="form-group campo-fecha"><label for="fecha_venta">Fecha de venta *</label>
+            <input type="date" id="fecha_venta" name="fecha_venta" {% if not solo_lectura %}required{% endif %} value="{{ pedido.fecha_venta.strftime('%Y-%m-%d') if pedido and pedido.fecha_venta else '' }}" {% if not solo_lectura %}onchange="recotizarTodas()"{% endif %}></div>
+    </div>
 
-function agregarItem() {
-    const container = document.getElementById('itemsContainer');
-    
-    const newItem = document.createElement('div');
-    newItem.className = 'item-row';
-    newItem.innerHTML = `
-        <div>
-            <select name="producto_${itemCount}" class="producto-select">
-                <option value="">Seleccionar producto</option>
-                {% for producto in productos %}
-                <option value="{{ producto.id }}" data-costo="{{ producto.costo_unitario }}">
-                    {{ producto.nombre }} ({{ producto.proveedor.nombre }})
-                </option>
-                {% endfor %}
+    <section class="pedido-seccion pedido-seccion--cliente">
+        <h3>Datos del Cliente</h3>
+        <div class="form-group pedido-campo w-ped-lg">
+            <label for="cliente_id">Cliente *</label>
+            <select id="cliente_id" name="cliente_id" {% if not solo_lectura %}required onchange="cargarDatosCliente()"{% endif %}>
+                <option value="">Seleccionar</option>
+                {% if not solo_lectura %}<option value="__nuevo__" style="background:#fef3c7;font-weight:bold;">Cargar uno nuevo</option>{% endif %}
+                {% for c in clientes %}<option value="{{ c.id }}" {% if pedido and pedido.cliente_id==c.id %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
             </select>
         </div>
-        <div>
-            <input type="number" name="cantidad_${itemCount}" class="cantidad-input" step="0.01" value="1">
+        <div class="pedido-datos-cliente">
+            <div class="pedido-campo w-ped-md"><label>Mercado</label><input type="text" id="mercado" name="mercado" readonly style="background:rgba(255,255,255,0.8)" value="{{ pedido.mercado if pedido else '' }}"></div>
+            <div class="pedido-campo w-ped-sm"><label>Puesto</label><input type="text" id="puesto" name="puesto" readonly style="background:rgba(255,255,255,0.8)" value="{{ pedido.puesto if pedido else '' }}"></div>
+            <div class="pedido-campo w-ped-md"><label>CUIT</label><input type="text" id="cuit_cliente" readonly style="background:rgba(255,255,255,0.8)"></div>
+            <div class="pedido-campo w-ped-lg"><label>Contacto</label><input type="text" id="contacto_cliente" readonly style="background:rgba(255,255,255,0.8)"></div>
+            <div class="pedido-campo w-ped-xl"><label>Dirección</label><input type="text" id="direccion_cliente" readonly style="background:rgba(255,255,255,0.8)"></div>
         </div>
-        <div>
-            <input type="number" name="precio_unitario_${itemCount}" class="precio-input" step="0.01" value="0">
+    </section>
+
+    <section class="pedido-seccion pedido-seccion--logistica">
+        <h3>Datos Logísticos</h3>
+        <div class="pedido-fila-campos">
+            <div class="campo-ancho pedido-campo w-ped-lg"><label>Proveedor Logístico</label>
+                <select name="prov_logistico_id" {% if not solo_lectura %}onchange="if(this.value==='__nuevo__')location.href='{{ url_for('nuevo_proveedor_logistico') }}'"{% endif %}>
+                    <option value="">—</option>
+                    {% if not solo_lectura %}<option value="__nuevo__" style="background:#fef3c7;font-weight:bold;">Cargar nuevo</option>{% endif %}
+                    {% for p in prov_logisticos %}<option value="{{ p.id }}" {% if pedido and pedido.prov_logistico_id==p.id %}selected{% endif %}>{{ p.nombre }}</option>{% endfor %}
+                </select></div>
+            <div class="campo-fecha"><label>Fecha de Carga</label><input type="date" name="fecha_carga" value="{{ pedido.fecha_carga.strftime('%Y-%m-%d') if pedido and pedido.fecha_carga else '' }}"></div>
         </div>
-        <div>
-            <input type="number" class="subtotal-input" disabled readonly step="0.01" value="0">
+    </section>
+
+    <section class="pedido-seccion pedido-seccion--remito">
+        <h3>Remito</h3>
+        <div class="pedido-fila-campos">
+            <div class="campo-ancho pedido-campo w-ped-md"><label>N° de Remito</label>
+                <input type="text" name="remito" placeholder="Completar manualmente"
+                    value="{{ pedido.remito if pedido and pedido.remito else '' }}"></div>
+            <div class="campo-fecha"><label>Fecha del remito</label>
+                <input type="date" name="fecha_remito"
+                    value="{{ pedido.fecha_remito.strftime('%Y-%m-%d') if pedido and pedido.fecha_remito else '' }}"></div>
+            <div class="pedido-adjunto-remito pedido-campo">
+                <label>Adjuntar</label>
+                {% if pedido and pedido.remito_adjunto_path %}
+                <div class="adjunto-actual">
+                    <a href="{{ url_for('descargar_remito_adjunto', id=pedido.id) }}" target="_blank" rel="noopener">
+                        Descargar: {{ pedido.remito_adjunto_nombre or 'remito' }}
+                    </a>
+                    {% if not solo_lectura %}
+                    <label class="quitar-adjunto">
+                        <input type="checkbox" name="eliminar_remito_adjunto" value="1"> Quitar archivo
+                    </label>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if not solo_lectura %}
+                <input type="file" name="remito_adjunto" accept=".pdf,image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif">
+                <span style="font-size:11px;color:#718096;">PDF o foto (máx. 15 MB)</span>
+                {% elif not pedido or not pedido.remito_adjunto_path %}
+                <span style="font-size:13px;color:#a0aec0;">Sin archivo adjunto</span>
+                {% endif %}
+            </div>
         </div>
-        <button type="button" class="btn btn-remove btn-remove-item">X</button>
-    `;
-    
-    container.appendChild(newItem);
-    itemCount++;
-    document.getElementById('item_count').value = itemCount;
-    
-    // Agregar listeners a los nuevos elementos
-    agregarListeners();
+    </section>
+
+    <section class="pedido-seccion pedido-seccion--entregado">
+        <h3>Entregado</h3>
+        <div class="pedido-fila-campos">
+            <div class="campo-fecha" style="min-width:6rem;">
+                <label>Entregado</label>
+                <select name="entregado_opcion" style="width:5.5rem;">
+                    <option value="" {% if not pedido or pedido.entregado_opcion != 'SI' %}selected{% endif %}></option>
+                    <option value="SI" {% if pedido and (pedido.entregado_opcion == 'SI' or (pedido.entregado and not pedido.entregado_opcion)) %}selected{% endif %}>SI</option>
+                </select>
+            </div>
+            <div class="campo-fecha"><label>Fecha de entrega</label>
+                <input type="date" name="fecha_entrega"
+                    value="{{ pedido.fecha_entrega.strftime('%Y-%m-%d') if pedido and pedido.fecha_entrega else '' }}"></div>
+        </div>
+    </section>
+
+    <section class="pedido-seccion pedido-seccion--productos">
+        <h3>Productos</h3>
+        <div id="errorProveedorPedido" class="pedido-error-proveedor">Cada pedido tiene que tener el mismo proveedor</div>
+        <div class="lineas-producto-header" id="lineasHeader">
+            <div class="c-prov">Proveedor</div>
+            <div class="c-fruta">Fruta</div>
+            <div class="c-var">Variedad</div>
+            <div class="c-cla">Clasif.</div>
+            <div class="c-env">Envase</div>
+            <div class="c-kg">Kg</div>
+            <div class="c-mar">Marca</div>
+            <div class="c-pal">Pallets</div>
+            <div class="c-bul">Bultos</div>
+            <div class="c-cu">C.U.</div>
+            <div class="c-pvu">PV U.</div>
+            <div class="c-ct">C. Total</div>
+            <div class="c-pvt">PV Total</div>
+            <div class="c-rtd">Rtdo</div>
+            <div class="c-cotiz"></div>
+            <div class="c-del"></div>
+        </div>
+        <div id="lineasContainer"></div>
+        {% if not solo_lectura %}
+        <button type="button" class="btn" onclick="agregarLinea()" style="margin-top:8px;">+ Cargar otra línea</button>
+        {% endif %}
+    </section>
+
+    {% set desc_costo_val = (pedido.descuento_costo if pedido and pedido.descuento_costo else 0) or (pedido.descuento_monto if pedido and pedido.descuento_sobre_costo and pedido.descuento_monto else 0) %}
+    {% set desc_com_val = (pedido.descuento_comision if pedido and pedido.descuento_comision else 0) or (pedido.descuento_monto if pedido and pedido.descuento_sobre_comision and pedido.descuento_monto else 0) %}
+    {% set tiene_desc = pedido and ((desc_costo_val or 0) > 0 or (desc_com_val or 0) > 0) %}
+    <section class="pedido-seccion pedido-seccion--descuento">
+        <label class="pedido-descuento-toggle">
+            <input type="checkbox" id="descuento_activo" name="descuento_activo" value="1"
+                {% if tiene_desc %}checked{% endif %}
+                {% if solo_lectura %}disabled{% endif %}>
+            Aplicar Descuento
+        </label>
+        <div id="panelDescuento" style="{% if not tiene_desc %}display:none{% endif %}">
+            <div class="pedido-campo">
+                <label for="descuento_costo">Descuento proveedor</label>
+                <input type="text" id="descuento_costo" name="descuento_costo" data-numero
+                    class="w-ped-md" placeholder="0,00"
+                    value="{% if desc_costo_val %}{{ desc_costo_val | formato_numero }}{% endif %}"
+                    {% if solo_lectura %}readonly{% endif %}>
+            </div>
+            <div class="pedido-campo">
+                <label for="descuento_comision">Descuento comisión</label>
+                <input type="text" id="descuento_comision" name="descuento_comision" data-numero
+                    class="w-ped-md" placeholder="0,00"
+                    value="{% if desc_com_val %}{{ desc_com_val | formato_numero }}{% endif %}"
+                    {% if solo_lectura %}readonly{% endif %}>
+            </div>
+            <div class="pedido-descuento-total">
+                <label>Total descuento</label>
+                <strong id="descuentoTotalLbl">$0,00</strong>
+            </div>
+            <p class="pedido-descuento-hint" style="flex:1 1 100%;">
+                Completá el importe en cada casilla; solo se descuenta donde ingreses un monto mayor a cero.
+                <span id="brutosRefText"></span>
+            </p>
+        </div>
+    </section>
+
+    <div class="pedido-totales-grid">
+        <div class="pedido-stat-card pedido-stat-venta">
+            <h3>Total Venta</h3>
+            <div class="value" id="precioVentaTotal">{% if solo_lectura %}{{ pedido.precio_venta_total | moneda }}{% else %}$0{% endif %}</div>
+            <div class="pedido-brutos-ref" id="ventaBrutaRef"></div>
+        </div>
+        <div class="pedido-stat-card pedido-stat-costo">
+            <h3>Total Costo</h3>
+            <div class="value" id="costoTotal">{% if solo_lectura %}{{ pedido.costo_total | moneda }}{% else %}$0{% endif %}</div>
+            <div class="pedido-brutos-ref" id="costoBrutoRef"></div>
+        </div>
+        <div class="pedido-stat-card pedido-stat-comision">
+            <h3>Comisión</h3>
+            <div class="value" id="resultadoTotal">{% if solo_lectura %}{{ pedido.resultado | moneda }}{% else %}$0{% endif %}</div>
+            <div class="pedido-brutos-ref" id="comisionBrutaRef"></div>
+        </div>
+    </div>
+
+    {% if not solo_lectura %}
+    <div style="margin-top:25px;display:flex;gap:10px;">
+        <button type="submit" class="btn btn-success">{% if pedido %}Guardar{% else %}Crear Pedido{% endif %}</button>
+        <a href="{{ url_for('listar_pedidos') }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+    <input type="hidden" name="item_count" id="item_count" value="0">
+    {% endif %}
+{% if solo_lectura %}</div>{% else %}</form>{% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const SOLO_LECTURA = {{ solo_lectura|default(false)|tojson }};
+const PROVEEDORES = [{% for p in proveedores %}{id:{{p.id}},nombre:{{p.nombre|tojson}}}{% if not loop.last %},{% endif %}{% endfor %}];
+let lineaIdx = 0;
+function fmtN(v, d) { return (window.ERP ? ERP.formatoNumero(v, d === undefined ? 2 : d) : String(v)); }
+function numVal(el) { return window.ERP ? ERP.getInputNumero(el) : (parseFloat(el.value) || 0); }
+function setNum(el, v) { window.ERP ? ERP.setInputNumero(el, v, 2) : (el.value = v); }
+const LINEAS_INICIALES = [
+{% if pedido and pedido.items %}
+{% for it in pedido.items %}
+{ producto_id:{{it.producto_id}}, proveedor_id:{{it.producto.proveedor_id}},
+  fruta:{{it.producto.fruta|tojson}}, variedad:{{(it.producto.variedad or '')|tojson}},
+  clasificacion:{{(it.producto.clasificacion or '')|tojson}}, envase:{{(it.producto.envase or '')|tojson}},
+  kilogramo:{{(it.producto.kilogramo or '')|tojson}}, marca:{{(it.producto.marca or '')|tojson}},
+  pallets:{{it.pallets or 0}}, bultos:{{it.bultos}}, costo_unitario:{{it.costo_unitario}}, precio_unitario:{{it.precio_unitario}} }{% if not loop.last %},{% endif %}
+{% endfor %}
+{% endif %}
+];
+
+function optsProveedor(sel) {
+    let h = '<option value="">—</option>';
+    if (!SOLO_LECTURA) h += '<option value="__nuevo__" style="background:#fef3c7;font-weight:bold;">Cargar nuevo</option>';
+    PROVEEDORES.forEach(p => h += `<option value="${p.id}" ${p.id==sel?'selected':''}>${p.nombre}</option>`);
+    return h;
 }
 
-function agregarListeners() {
-    document.querySelectorAll('.item-row').forEach((row, idx) => {
-        const productoSelect = row.querySelector('.producto-select');
-        const cantidadInput = row.querySelector('.cantidad-input');
-        const precioInput = row.querySelector('.precio-input');
-        const subtotalInput = row.querySelector('.subtotal-input');
-        const removeBtn = row.querySelector('.btn-remove-item');
-        
-        productoSelect.addEventListener('change', calcularTotales);
-        cantidadInput.addEventListener('input', calcularTotales);
-        precioInput.addEventListener('input', calcularTotales);
-        removeBtn.addEventListener('click', () => {
-            row.remove();
-            calcularTotales();
+function filaHtml(idx, d) {
+    d = d || {};
+    const b = parseInt(d.bultos, 10) || 0;
+    const cu = parseFloat(d.costo_unitario) || 0;
+    const pv = parseFloat(d.precio_unitario) || 0;
+    const ct = cu * b, pt = pv * b, rtdo = pt - ct;
+    const dis = SOLO_LECTURA ? ' disabled' : '';
+    const onProv = SOLO_LECTURA ? '' : ` onchange="onProvChange(${idx})"`;
+    const oc = (c) => SOLO_LECTURA ? '' : ` onchange="onCampoProductoChange(${idx}, '${c}')"`;
+    const btnDel = SOLO_LECTURA ? '' : `<div class="c-del"><button type="button" class="btn btn-danger" style="padding:4px 7px;font-size:11px;" onclick="this.closest('.linea-producto').remove();actualizarCount();validarProveedoresVisuales();calcTotales();">✕</button></div>`;
+    const reqBultos = SOLO_LECTURA ? '' : ' required';
+    const onBultos = SOLO_LECTURA ? '' : ` oninput="calcFila(${idx})"`;
+    return `<div class="linea-producto" data-idx="${idx}">
+        <input type="hidden" name="producto_id_${idx}" class="pid" value="${d.producto_id||''}">
+        <div class="c-prov"><select name="proveedor_id_${idx}" class="sel-prov" title="Proveedor"${onProv}${dis}>${optsProveedor(d.proveedor_id)}</select></div>
+        <div class="c-fruta"><select name="fruta_${idx}" class="sel-fruta" title="Fruta"${oc('fruta')}${dis}><option value="">—</option></select></div>
+        <div class="c-var"><select name="variedad_${idx}" class="sel-var" title="Variedad"${oc('variedad')}${dis}><option value="">—</option></select></div>
+        <div class="c-cla"><select name="clasificacion_${idx}" class="sel-cla" title="Clasificación"${oc('clasificacion')}${dis}><option value="">—</option></select></div>
+        <div class="c-env"><select name="envase_${idx}" class="sel-env" title="Envase"${oc('envase')}${dis}><option value="">—</option></select></div>
+        <div class="c-kg"><select name="kilogramo_${idx}" class="sel-kg" title="Kg"${oc('kilogramo')}${dis}><option value="">—</option></select></div>
+        <div class="c-mar"><select name="marca_${idx}" class="sel-mar" title="Marca"${oc('marca')}${dis}><option value="">—</option></select></div>
+        <div class="c-pal"><input type="number" name="pallets_${idx}" min="0" value="${d.pallets||''}" title="Pallets"${dis}></div>
+        <div class="c-bul"><input type="number" name="bultos_${idx}" class="inp-bultos" min="1"${reqBultos} value="${d.bultos||''}" title="Bultos"${onBultos}${dis}></div>
+        <div class="c-cu"><input type="text" name="costo_unitario_${idx}" class="inp-costo-u" data-numero readonly title="Costo unitario" value="${d.costo_unitario ? fmtN(d.costo_unitario) : '0,00'}"></div>
+        <div class="c-pvu"><input type="text" name="precio_unitario_${idx}" class="inp-pv-u" data-numero readonly title="Precio venta unitario" value="${d.precio_unitario ? fmtN(d.precio_unitario) : '0,00'}"></div>
+        <div class="c-ct"><input class="inp-costo-t" data-numero readonly title="Costo total" value="${b ? fmtN(ct) : '0,00'}"></div>
+        <div class="c-pvt"><input class="inp-pv-t" data-numero readonly title="PV total" value="${b ? fmtN(pt) : '0,00'}"></div>
+        <div class="c-rtd"><input class="inp-rtdo" data-numero readonly title="Resultado" value="${b ? fmtN(rtdo) : '0,00'}"></div>
+        <div class="c-cotiz msg-cotiz"></div>
+        ${btnDel}
+    </div>`;
+}
+
+async function agregarLinea(d) {
+    const c = document.getElementById('lineasContainer');
+    c.insertAdjacentHTML('beforeend', filaHtml(lineaIdx, d));
+    const idx = lineaIdx++;
+    if (!SOLO_LECTURA) actualizarCount();
+    if (d && d.proveedor_id) await initLinea(idx, d);
+    return idx;
+}
+
+function actualizarCount() {
+    document.getElementById('item_count').value = document.querySelectorAll('.linea-producto').length;
+}
+
+function getRow(idx) {
+    return document.querySelector(`.linea-producto[data-idx="${idx}"]`);
+}
+
+function paramsCascada(row, idx, campo) {
+    const p = new URLSearchParams();
+    const prov = row.querySelector('.sel-prov').value;
+    if (!prov || prov === '__nuevo__') return null;
+    p.set('proveedor_id', prov);
+    const orden = ['fruta','variedad','clasificacion','envase','kilogramo'];
+    for (const c of orden) {
+        if (c === campo) break;
+        const el = row.querySelector(`[name="${c}_${idx}"]`);
+        if (el && el.value) p.set(c, el.value);
+    }
+    p.set('campo', campo);
+    return p;
+}
+
+async function cascada(idx, campo, opts) {
+    opts = opts || {};
+    const row = getRow(idx);
+    if (!row) return;
+    const p = paramsCascada(row, idx, campo);
+    if (!p) return;
+    const vals = await fetch('/api/productos/opciones?' + p).then(r => r.json());
+    const map = {fruta:'sel-fruta',variedad:'sel-var',clasificacion:'sel-cla',envase:'sel-env',kilogramo:'sel-kg',marca:'sel-mar'};
+    const el = row.querySelector('.' + map[campo]);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">—</option>';
+    vals.forEach(v => { const o = document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); });
+    if (cur && vals.includes(cur)) el.value = cur;
+    const orden = ['fruta','variedad','clasificacion','envase','kilogramo','marca'];
+    const i = orden.indexOf(campo);
+    if (i < orden.length - 1) await cascada(idx, orden[i+1], opts);
+}
+
+async function onCampoProductoChange(idx, campo) {
+    const orden = ['fruta','variedad','clasificacion','envase','kilogramo','marca'];
+    const pos = orden.indexOf(campo);
+    if (pos >= 0 && pos < orden.length - 1) {
+        await cascada(idx, orden[pos + 1]);
+    }
+    await buscarCotizacion(idx);
+}
+
+async function onProvChange(idx) {
+    const row = getRow(idx);
+    const sel = row.querySelector('.sel-prov');
+    const v = sel.value;
+    if (v === '__nuevo__') { location.href = '{{ url_for("nuevo_proveedor") }}'; return; }
+    const provs = obtenerProveedoresLineas();
+    if (v && provs.length > 1 && new Set(provs).size > 1) {
+        sel.value = '';
+        mostrarErrorProveedor();
+        return;
+    }
+    validarProveedoresVisuales();
+    await cascada(idx, 'fruta');
+    await buscarCotizacion(idx);
+}
+
+async function initLinea(idx, d) {
+    const row = getRow(idx);
+    const set = (cls, val) => { const el = row.querySelector(cls); if (el && val) el.value = val; };
+    const opts = { skipCotiz: true };
+    row.querySelector('.sel-prov').value = d.proveedor_id;
+    await cascada(idx, 'fruta', opts);
+    set('.sel-fruta', d.fruta); await cascada(idx, 'variedad', opts);
+    set('.sel-var', d.variedad); await cascada(idx, 'clasificacion', opts);
+    set('.sel-cla', d.clasificacion); await cascada(idx, 'envase', opts);
+    set('.sel-env', d.envase); await cascada(idx, 'kilogramo', opts);
+    set('.sel-kg', d.kilogramo); await cascada(idx, 'marca', opts);
+    set('.sel-mar', d.marca);
+    if (d.producto_id) row.querySelector('.pid').value = d.producto_id;
+    if (d.costo_unitario != null) setNum(row.querySelector('.inp-costo-u'), d.costo_unitario);
+    if (d.precio_unitario != null) setNum(row.querySelector('.inp-pv-u'), d.precio_unitario);
+    await buscarCotizacion(idx);
+    calcFila(idx);
+}
+
+function asegurarFechaVenta() {
+    const el = document.getElementById('fecha_venta');
+    if (el && !el.value) {
+        el.value = new Date().toISOString().slice(0, 10);
+    }
+    return document.getElementById('fecha_venta').value;
+}
+
+async function buscarCotizacion(idx) {
+    const row = getRow(idx);
+    if (!row) return;
+    const prov = row.querySelector('.sel-prov');
+    const fruta = row.querySelector('.sel-fruta');
+    if (!prov || !prov.value || prov.value === '__nuevo__' || !fruta || !fruta.value) return;
+    const fecha = asegurarFechaVenta();
+    const msg = row.querySelector('.msg-cotiz');
+    const p = new URLSearchParams({ fecha });
+    ['proveedor_id','fruta','variedad','clasificacion','envase','kilogramo','marca'].forEach(c => {
+        const el = row.querySelector(`[name="${c}_${idx}"]`) || row.querySelector('.sel-prov');
+        const name = c === 'proveedor_id' ? 'proveedor_id' : c;
+        const e = row.querySelector(`[name="${name}_${idx}"]`) || (c==='proveedor_id'?row.querySelector('.sel-prov'):null);
+        if (e && e.value && e.value !== '__nuevo__') p.set(c === 'proveedor_id' ? 'proveedor_id' : c, e.value);
+    });
+    p.set('proveedor_id', prov.value);
+    const res = await fetch('/api/cotizaciones/vigente?' + p).then(r => r.json());
+    if (res.encontrada) {
+        setNum(row.querySelector('.inp-costo-u'), res.costo_unitario);
+        setNum(row.querySelector('.inp-pv-u'), res.precio_unitario);
+        row.querySelector('.pid').value = res.producto_id;
+        msg.innerHTML = '';
+        calcFila(idx);
+    } else {
+        const cu = numVal(row.querySelector('.inp-costo-u'));
+        const pv = numVal(row.querySelector('.inp-pv-u'));
+        if (cu <= 0 && pv <= 0) {
+            setNum(row.querySelector('.inp-costo-u'), 0);
+            setNum(row.querySelector('.inp-pv-u'), 0);
+        }
+        if (res.producto_id) row.querySelector('.pid').value = res.producto_id;
+        if (!SOLO_LECTURA) {
+            msg.innerHTML = '<span class="sin-cotiz"><a href="{{ url_for("nueva_cotizacion") }}">Cargar nueva cotización</a></span>';
+        }
+        calcFila(idx);
+    }
+}
+
+function calcFila(idx) {
+    const row = getRow(idx);
+    const b = parseInt(row.querySelector('.inp-bultos').value) || 0;
+    const cu = numVal(row.querySelector('.inp-costo-u'));
+    const pv = numVal(row.querySelector('.inp-pv-u'));
+    const ct = cu * b, pt = pv * b, r = pt - ct;
+    setNum(row.querySelector('.inp-costo-t'), ct);
+    setNum(row.querySelector('.inp-pv-t'), pt);
+    setNum(row.querySelector('.inp-rtdo'), r);
+    calcTotales();
+}
+
+function getBrutosLineas() {
+    let costo = 0, venta = 0;
+    document.querySelectorAll('.linea-producto').forEach(row => {
+        costo += numVal(row.querySelector('.inp-costo-t'));
+        venta += numVal(row.querySelector('.inp-pv-t'));
+    });
+    return { costo, venta, comision: venta - costo };
+}
+
+function getDescuentoForm() {
+    const activo = document.getElementById('descuento_activo')?.checked;
+    if (!activo) return { desc_costo: 0, desc_comision: 0, total: 0 };
+    const elC = document.getElementById('descuento_costo');
+    const elM = document.getElementById('descuento_comision');
+    const desc_costo = elC ? numVal(elC) : 0;
+    const desc_comision = elM ? numVal(elM) : 0;
+    return { desc_costo, desc_comision, total: desc_costo + desc_comision };
+}
+
+function aplicarDescuentoTotales(costoBruto, ventaBruta) {
+    const comisionBruta = ventaBruta - costoBruto;
+    const d = getDescuentoForm();
+    const costo = Math.max(0, costoBruto - d.desc_costo);
+    const comision = Math.max(0, comisionBruta - d.desc_comision);
+    return { costo, venta: costo + comision, comision };
+}
+
+function actualizarTotalDescuentoLbl() {
+    const lbl = document.getElementById('descuentoTotalLbl');
+    if (!lbl) return;
+    const d = getDescuentoForm();
+    lbl.textContent = ERP.formatoMoneda(d.total);
+}
+
+function actualizarRefBrutos(brutos, finales, conDescuento) {
+    const fmt = (v) => ERP.formatoMoneda(v);
+    const setRef = (id, texto) => { const el = document.getElementById(id); if (el) el.textContent = texto; };
+    if (!conDescuento) {
+        setRef('ventaBrutaRef', '');
+        setRef('costoBrutoRef', '');
+        setRef('comisionBrutaRef', '');
+        setRef('brutosRefText', '');
+        return;
+    }
+    setRef('ventaBrutaRef', brutos.venta !== finales.venta ? `Antes: ${fmt(brutos.venta)}` : '');
+    setRef('costoBrutoRef', brutos.costo !== finales.costo ? `Antes: ${fmt(brutos.costo)}` : '');
+    setRef('comisionBrutaRef', brutos.comision !== finales.comision ? `Antes: ${fmt(brutos.comision)}` : '');
+    setRef('brutosRefText', ` Subtotal líneas: venta ${fmt(brutos.venta)} · costo ${fmt(brutos.costo)} · comisión ${fmt(brutos.comision)}`);
+}
+
+function togglePanelDescuento() {
+    const chk = document.getElementById('descuento_activo');
+    const panel = document.getElementById('panelDescuento');
+    if (!chk || !panel) return;
+    panel.style.display = chk.checked ? '' : 'none';
+    if (!chk.checked) {
+        const c = document.getElementById('descuento_costo');
+        const m = document.getElementById('descuento_comision');
+        if (c) setNum(c, 0);
+        if (m) setNum(m, 0);
+    }
+    calcTotales();
+}
+
+function obtenerProveedoresLineas() {
+    return [...document.querySelectorAll('.linea-producto .sel-prov')]
+        .map(s => s.value)
+        .filter(v => v && v !== '__nuevo__');
+}
+
+function validarTodosProveedoresIguales() {
+    const provs = obtenerProveedoresLineas();
+    if (provs.length <= 1) return true;
+    return provs.every(p => p === provs[0]);
+}
+
+function mostrarErrorProveedor() {
+    const box = document.getElementById('errorProveedorPedido');
+    if (box) box.style.display = 'block';
+}
+
+function ocultarErrorProveedor() {
+    const box = document.getElementById('errorProveedorPedido');
+    if (box) box.style.display = 'none';
+}
+
+function validarProveedoresVisuales() {
+    if (validarTodosProveedoresIguales()) ocultarErrorProveedor();
+    else mostrarErrorProveedor();
+}
+
+function calcTotales() {
+    const brutos = getBrutosLineas();
+    const finales = aplicarDescuentoTotales(brutos.costo, brutos.venta);
+    const d = getDescuentoForm();
+    const conDescuento = d.total > 0;
+    actualizarTotalDescuentoLbl();
+    document.getElementById('precioVentaTotal').textContent = ERP.formatoMoneda(finales.venta);
+    document.getElementById('costoTotal').textContent = ERP.formatoMoneda(finales.costo);
+    document.getElementById('resultadoTotal').textContent = ERP.formatoMoneda(finales.comision);
+    actualizarRefBrutos(brutos, finales, conDescuento);
+}
+
+function recotizarTodas() {
+    asegurarFechaVenta();
+    document.querySelectorAll('.linea-producto').forEach(row => buscarCotizacion(parseInt(row.dataset.idx, 10)));
+}
+
+function prepararEnvioPedido() {
+    const lines = [...document.querySelectorAll('.linea-producto')];
+    lines.forEach((row, newIdx) => {
+        row.dataset.idx = String(newIdx);
+        row.querySelectorAll('[name]').forEach(el => {
+            const m = el.name && el.name.match(/^(.+)_(\d+)$/);
+            if (m) el.name = `${m[1]}_${newIdx}`;
         });
     });
+    const ic = document.getElementById('item_count');
+    if (ic) ic.value = String(lines.length);
 }
 
-function calcularTotales() {
-    let costoTotal = 0;
-    let precioVentaTotal = 0;
-    
-    document.querySelectorAll('.item-row').forEach(row => {
-        const productoSelect = row.querySelector('.producto-select');
-        const cantidadInput = row.querySelector('.cantidad-input');
-        const precioInput = row.querySelector('.precio-input');
-        const subtotalInput = row.querySelector('.subtotal-input');
-        
-        const cantidad = parseFloat(cantidadInput.value) || 0;
-        const precioUnitario = parseFloat(precioInput.value) || 0;
-        const costoUnitario = parseFloat(productoSelect.options[productoSelect.selectedIndex].dataset.costo) || 0;
-        
-        const subtotal = cantidad * precioUnitario;
-        const costo = cantidad * costoUnitario;
-        
-        subtotalInput.value = subtotal.toFixed(2);
-        
-        costoTotal += costo;
-        precioVentaTotal += subtotal;
+function cargarDatosCliente() {
+    const id = document.getElementById('cliente_id').value;
+    if (id === '__nuevo__') { location.href = '{{ url_for("nuevo_cliente") }}'; return; }
+    if (!id) return;
+    fetch('/api/cliente/'+id+'/datos').then(r=>r.json()).then(d => {
+        document.getElementById('mercado').value = d.mercado||'';
+        document.getElementById('puesto').value = d.puesto||'';
+        document.getElementById('cuit_cliente').value = d.cuit||'';
+        document.getElementById('contacto_cliente').value = d.contacto||'';
+        document.getElementById('direccion_cliente').value = d.direccion||'';
     });
-    
-    const resultado = precioVentaTotal - costoTotal;
-    
-    document.getElementById('costoTotal').textContent = '$' + costoTotal.toFixed(2);
-    document.getElementById('precioVentaTotal').textContent = '$' + precioVentaTotal.toFixed(2);
-    document.getElementById('resultadoTotal').textContent = '$' + resultado.toFixed(2);
 }
 
-// Inicializar listeners
-agregarListeners();
+function initDescuentoPedido() {
+    const chk = document.getElementById('descuento_activo');
+    if (chk) chk.addEventListener('change', togglePanelDescuento);
+    ['descuento_costo', 'descuento_comision'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', calcTotales);
+            el.addEventListener('change', calcTotales);
+        }
+    });
+    togglePanelDescuento();
+    actualizarTotalDescuentoLbl();
+}
+
+async function iniciarPedidoForm() {
+    if (!SOLO_LECTURA) asegurarFechaVenta();
+    initDescuentoPedido();
+    const pedidoForm = document.getElementById('pedidoForm');
+    if (pedidoForm && pedidoForm.tagName === 'FORM') {
+        pedidoForm.addEventListener('submit', function(e) {
+            prepararEnvioPedido();
+            if (!validarTodosProveedoresIguales()) {
+                e.preventDefault();
+                mostrarErrorProveedor();
+                document.getElementById('lineasContainer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
+    if (LINEAS_INICIALES.length) {
+        for (const d of LINEAS_INICIALES) await agregarLinea(d);
+    } else if (!SOLO_LECTURA) {
+        agregarLinea();
+    }
+    {% if pedido and pedido.cliente_id %}
+    if (SOLO_LECTURA) {
+        {% if pedido.cliente %}
+        document.getElementById('cuit_cliente').value = {{ pedido.cliente.cuit|tojson }} || '';
+        document.getElementById('contacto_cliente').value = {{ pedido.cliente.contacto|tojson }} || '';
+        document.getElementById('direccion_cliente').value = {{ pedido.cliente.direccion|tojson }} || '';
+        {% endif %}
+    } else {
+        cargarDatosCliente();
+    }
+    {% endif %}
+    calcTotales();
+    if (SOLO_LECTURA) {
+        document.querySelectorAll('#pedidoForm input:not([type="hidden"]), #pedidoForm select').forEach(el => { el.disabled = true; });
+    }
+}
+document.addEventListener('DOMContentLoaded', iniciarPedidoForm);
 </script>
 {% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Productos - Elegir Proveedor{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>Productos — Elegir proveedor</h2>
+    <a href="{{ url_for('listar_productos') }}" class="btn btn-secondary">Volver</a>
+</div>
+
+<div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <p style="margin-bottom: 20px; color: #718096;">Seleccione el proveedor para cargar o editar sus combinaciones de productos.</p>
+    <div class="form-group">
+        <label for="proveedor_id">Proveedor</label>
+        <select id="proveedor_id" required>
+            <option value="">Seleccionar...</option>
+            <option value="__nuevo__" style="background: #fef3c7; font-weight: bold;">Cargar nuevo proveedor</option>
+            {% for p in proveedores %}
+            <option value="{{ p.id }}">{{ p.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="button" class="btn btn-success" onclick="continuar()">Continuar</button>
+</div>
+
+<script>
+document.getElementById('proveedor_id').addEventListener('change', function() {
+    if (this.value === '__nuevo__') {
+        window.location.href = '{{ url_for("nuevo_proveedor") }}';
+        this.value = '';
+    }
+});
+function continuar() {
+    const id = document.getElementById('proveedor_id').value;
+    if (!id || id === '__nuevo__') { alert('Seleccione un proveedor'); return; }
+    window.location.href = '/productos/proveedor/' + id;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Proveedores Logísticos - ERP{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>Proveedores Logísticos</h2>
+</div>
+
+{% if proveedores %}
+<table>
+    <thead>
+        <tr>
+            <th>Proveedor</th>
+            <th>CUIT</th>
+            <th>Teléfono</th>
+            <th>Mail</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="tablaProvLog">
+        {% for p in proveedores %}
+        <tr class="fila-datos">
+            <td><strong>{{ p.nombre }}</strong></td>
+            <td>{{ p.cuit or '-' }}</td>
+            <td>{{ p.telefono or '-' }}</td>
+            <td>{{ p.email or '-' }}</td>
+            <td class="actions">
+                <a href="{{ url_for('editar_proveedor_logistico', id=p.id) }}" class="btn" style="padding: 6px 12px; font-size: 12px;">Editar</a>
+                <button onclick="eliminar({{ p.id }}, '{{ p.nombre }}')" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">Eliminar</button>
+            </td>
+        </tr>
+        {% endfor %}
+        <tr id="filaNuevo" style="display: none; background: #f7fafc;">
+            <td colspan="5">
+                <form id="formInline" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 10px; align-items: end; padding: 10px 0;">
+                    <div><label>Nombre *</label><input type="text" name="nombre" required></div>
+                    <div><label>CUIT</label><input type="text" name="cuit"></div>
+                    <div><label>Teléfono</label><input type="text" name="telefono"></div>
+                    <div><label>Mail</label><input type="email" name="email"></div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="submit" class="btn btn-success">Guardar</button>
+                        <button type="button" class="btn btn-secondary" onclick="cerrarInline()">Cancelar</button>
+                    </div>
+                </form>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div style="margin-top: 15px;">
+    <button type="button" class="btn btn-success" id="btnCargarNuevo" onclick="abrirInline()">+ Cargar nuevo</button>
+</div>
+{% else %}
+<p style="color: #a0aec0; margin-bottom: 15px;">No hay proveedores logísticos.</p>
+<button type="button" class="btn btn-success" onclick="window.location.href='{{ url_for('nuevo_proveedor_logistico') }}'">+ Cargar nuevo</button>
+{% endif %}
+
+<script>
+function abrirInline() {
+    document.getElementById('filaNuevo').style.display = 'table-row';
+    document.getElementById('btnCargarNuevo').style.display = 'none';
+}
+function cerrarInline() {
+    document.getElementById('filaNuevo').style.display = 'none';
+    document.getElementById('btnCargarNuevo').style.display = 'inline-block';
+}
+document.getElementById('formInline')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch('{{ url_for("nuevo_proveedor_logistico") }}', { method: 'POST', body: fd })
+        .then(r => { if (r.redirected) window.location.href = r.url; else location.reload(); })
+        .catch(() => alert('Error al guardar'));
+});
+function eliminar(id, nombre) {
+    if (!confirm('¿Eliminar "' + nombre + '"?')) return;
+    fetch('/proveedores-logisticos/' + id + '/eliminar', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => { if (d.success) location.reload(); else alert(d.error); });
+}
+</script>
+{% endblock %}

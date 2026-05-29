@@ -1,0 +1,117 @@
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f6fa;
+    color: #2d3748;
+    line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 0.75rem;
+}
+
+.container-fluid, .page-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+}
+
+.table th {
+    background: #edf2f7;
+    text-align: left;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid transparent;
+    border-radius: 0.35rem;
+    text-decoration: none;
+    color: #fff;
+    background-color: #667eea;
+    cursor: pointer;
+}
+
+.btn-outline-primary {
+    color: #667eea;
+    background: transparent;
+    border-color: #667eea;
+}
+
+.btn-success {
+    background-color: #48bb78;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1rem;
+}
+
+.card-header {
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f7fafc;
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    border-radius: 0.35rem;
+    font-size: 0.85rem;
+}
+
+.bg-success { background-color: #48bb78; color: #fff; }
+.bg-warning { background-color: #f6ad55; color: #fff; }
+.bg-danger { background-color: #f56565; color: #fff; }
+.bg-info { background-color: #4299e1; color: #fff; }
+
+.text-center { text-align: center; }
+.text-end { text-align: right; }
+.text-success { color: #38a169; }
+.text-danger { color: #e53e3e; }
+.text-muted { color: #718096; }
+
+.table-responsive { width: 100%; overflow-x: auto; }
+
+.progress {
+    height: 1rem;
+    background-color: #e2e8f0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    color: #fff;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-light { background-color: #f7fafc; }
+
+.fw-bold { font-weight: 700; }
+
+.table-hover tbody tr:hover { background-color: #edf2f7; }

@@ -22,7 +22,7 @@
     </div>
     <div class="stat-card">
         <h3>Saldo Actual</h3>
-        <div class="value">${{ "%.2f"|format(cliente.saldo) }}</div>
+        <div class="value">${{ cliente.saldo | formato_numero  }}</div>
     </div>
     <div class="stat-card">
         <h3>Total Pedidos</h3>
@@ -56,8 +56,8 @@
             <tr>
                 <td><a href="{{ url_for('ver_pedido', id=pedido.id) }}" style="color: #667eea; text-decoration: none;">{{ pedido.numero }}</a></td>
                 <td>{{ pedido.fecha_venta.strftime('%d/%m/%Y') }}</td>
-                <td>${{ "%.2f"|format(pedido.precio_venta_total) }}</td>
-                <td>${{ "%.2f"|format(pedido.resultado) }}</td>
+                <td>${{ pedido.precio_venta_total | formato_numero  }}</td>
+                <td>${{ pedido.resultado | formato_numero  }}</td>
                 <td>
                     {% if pedido.entregado %}
                     <span class="badge badge-success">Entregado</span>

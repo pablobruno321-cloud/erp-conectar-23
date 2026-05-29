@@ -16,8 +16,13 @@
 <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px;">
     <form method="POST">
         <div class="form-group">
-            <label for="nombre">Nombre *</label>
+            <label for="nombre">Proveedor *</label>
             <input type="text" id="nombre" name="nombre" value="{{ proveedor.nombre if proveedor else '' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="razon_social">Razón Social</label>
+            <input type="text" id="razon_social" name="razon_social" value="{{ proveedor.razon_social if proveedor else '' }}">
         </div>
         
         <div class="form-group">
@@ -26,19 +31,68 @@
         </div>
         
         <div class="form-group">
-            <label for="telefono">Teléfono</label>
-            <input type="text" id="telefono" name="telefono" value="{{ proveedor.telefono if proveedor else '' }}">
-        </div>
-        
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" value="{{ proveedor.email if proveedor else '' }}">
-        </div>
-        
-        <div class="form-group">
             <label for="direccion">Dirección</label>
             <input type="text" id="direccion" name="direccion" value="{{ proveedor.direccion if proveedor else '' }}">
         </div>
+        
+        <div class="form-group">
+            <label for="provincia">Provincia</label>
+            <input type="text" id="provincia" name="provincia" value="{{ proveedor.provincia if proveedor else '' }}">
+        </div>
+
+        <h3 style="margin-top: 30px;">Contactos</h3>
+        <div id="contactosContainer">
+            {% if proveedor and proveedor.contactos %}
+                {% for contacto in proveedor.contactos %}
+                <div class="contacto-row" style="margin-bottom: 15px; padding: 15px; background: #f7fafc; border-radius: 6px;">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" name="contacto_nombre[]" value="{{ contacto.nombre }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Rol</label>
+                        <input type="text" name="contacto_rol[]" value="{{ contacto.rol }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="text" name="contacto_telefono[]" value="{{ contacto.telefono }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="contacto_email[]" value="{{ contacto.email }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Contacto Logístico</label>
+                        <input type="checkbox" name="contacto_logistico_{{ loop.index0 }}" {% if contacto.contacto_logistico %}checked{% endif %}>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="contacto-row" style="margin-bottom: 15px; padding: 15px; background: #f7fafc; border-radius: 6px;">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" name="contacto_nombre[]">
+                    </div>
+                    <div class="form-group">
+                        <label>Rol</label>
+                        <input type="text" name="contacto_rol[]">
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="text" name="contacto_telefono[]">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="contacto_email[]">
+                    </div>
+                    <div class="form-group">
+                        <label>Contacto Logístico</label>
+                        <input type="checkbox" name="contacto_logistico_0">
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <button type="button" class="btn" onclick="agregarContacto()">+ Agregar contacto</button>
         
         <div style="display: flex; gap: 10px;">
             <button type="submit" class="btn btn-success">{{ 'Guardar Cambios' if proveedor else 'Crear Proveedor' }}</button>
@@ -46,4 +100,38 @@
         </div>
     </form>
 </div>
+<script>
+let contactoIndex = document.querySelectorAll('.contacto-row').length;
+
+function agregarContacto() {
+    const container = document.getElementById('contactosContainer');
+    const row = document.createElement('div');
+    row.className = 'contacto-row';
+    row.style = 'margin-bottom: 15px; padding: 15px; background: #f7fafc; border-radius: 6px;';
+    row.innerHTML = `
+        <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" name="contacto_nombre[]">
+        </div>
+        <div class="form-group">
+            <label>Rol</label>
+            <input type="text" name="contacto_rol[]">
+        </div>
+        <div class="form-group">
+            <label>Teléfono</label>
+            <input type="text" name="contacto_telefono[]">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="contacto_email[]">
+        </div>
+        <div class="form-group">
+            <label>Contacto Logístico</label>
+            <input type="checkbox" name="contacto_logistico_${contactoIndex}">
+        </div>
+    `;
+    contactoIndex += 1;
+    container.appendChild(row);
+}
+</script>
 {% endblock %}

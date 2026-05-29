@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ERP{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>Dashboard</h2>
+</div>
+
+<div class="stats">
+    <div class="stat-card">
+        <h3>Clientes Activos</h3>
+        <div class="value">{{ total_clientes if total_clientes else 0 }}</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #48bb78;">
+        <h3>Proveedores Activos</h3>
+        <div class="value">{{ total_proveedores if total_proveedores else 0 }}</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #f6ad55;">
+        <h3>Total Pedidos</h3>
+        <div class="value">{{ total_pedidos if total_pedidos else 0 }}</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #5a9ead;">
+        <h3>Venta Total</h3>
+        <div class="value">{{ venta_total|default(0)|moneda }}</div>
+    </div>
+</div>
+
+<div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <h3 style="margin: 0 0 15px 0; color: #667eea; font-size: 16px; font-weight: 600;">Clientes con Deuda</h3>
+    {% if clientes_deuda %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0;">
+                    <th style="text-align: left; padding: 12px;">Cliente</th>
+                    <th style="text-align: right; padding: 12px;">Total Facturado</th>
+                    <th style="text-align: right; padding: 12px;">Total Cobrado</th>
+                    <th style="text-align: right; padding: 12px;">Saldo Pendiente</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in clientes_deuda %}
+                <tr style="border-bottom: 1px solid #f7fafc;">
+                    <td style="padding: 12px;">{{ cliente.nombre }}</td>
+                    <td style="text-align: right; padding: 12px;">${{ cliente.total_facturado }}</td>
+                    <td style="text-align: right; padding: 12px;">${{ cliente.total_cobrado }}</td>
+                    <td style="text-align: right; padding: 12px; font-weight: 600; color: #f56565;">${{ cliente.saldo }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="color: #a0aec0; text-align: center; padding: 20px;">Sin datos disponibles</p>
+    {% endif %}
+</div>
+
+<div class="header" style="margin-top: 30px;">
+    <h2>Acciones Rápidas</h2>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px;">
+    <a href="{{ url_for('nuevo_cliente') }}" class="btn" style="text-align: center;">➕ Nuevo Cliente</a>
+    <a href="{{ url_for('nuevo_proveedor') }}" class="btn" style="text-align: center;">➕ Nuevo Proveedor</a>
+    <a href="{{ url_for('nuevo_producto') }}" class="btn" style="text-align: center;">➕ Nuevo Producto</a>
+    <a href="{{ url_for('nuevo_pedido') }}" class="btn btn-success" style="text-align: center;">📋 Nuevo Pedido</a>
+    <a href="{{ url_for('listar_cobranzas') }}" class="btn" style="text-align: center; background: #48bb78;">💰 Cobranzas</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+    console.log('Dashboard loaded successfully');
+</script>
+{% endblock %}

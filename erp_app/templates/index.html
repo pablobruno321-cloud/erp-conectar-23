@@ -3,178 +3,359 @@
 {% block title %}Dashboard - ERP{% endblock %}
 
 {% block content %}
-<div class="header">
-    <h2>Dashboard</h2>
+{% set kpi = kpis|default({
+    'total_ventas': 0, 'total_costo': 0, 'total_resultado': 0,
+    'saldo_cobrar': 0, 'saldo_proveedor': 0, 'saldo_comision': 0,
+    'cobrado_total': 0, 'cobrado_costo': 0, 'cobrado_comision': 0
+}, true) %}
+{% set g = gestion|default({
+    'pedidos_totales': 0, 'con_remito': 0, 'sin_remito': 0,
+    'entregados': 0, 'sin_entregar': 0, 'pedidos_cobrados': 0,
+    'sin_cobrar': 0, 'parcial_cobrado': 0
+}, true) %}
+
+<div class="dashboard-hero">
+    <h1 class="dashboard-hero-title">Dashboard</h1>
 </div>
 
-<div class="stats">
-    <div class="stat-card">
-        <h3>Clientes Activos</h3>
-        <div class="value">{{ total_clientes }}</div>
-    </div>
-    <div class="stat-card" style="border-left-color: #48bb78;">
-        <h3>Proveedores Activos</h3>
-        <div class="value">{{ total_proveedores }}</div>
-    </div>
-    <div class="stat-card" style="border-left-color: #f6ad55;">
-        <h3>Total Pedidos</h3>
-        <div class="value">{{ total_pedidos }}</div>
-    </div>
-    <div class="stat-card" style="border-left-color: #5a9ead;">
-        <h3>Venta Total</h3>
-        <div class="value">${{ venta_total|formato_numero }}</div>
-    </div>
-    <div class="stat-card" style="border-left-color: #f56565;">
-        <h3>Deuda Total Clientes</h3>
-        <div class="value">${{ deuda_clientes|formato_numero }}</div>
-    </div>
+<div class="dashboard-section-bar dashboard-section-bar-acciones">
+    <h2>Acciones Rapidas</h2>
 </div>
 
-<div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-    <h3 style="margin: 0 0 15px 0; color: #667eea; font-size: 16px; font-weight: 600;">Deuda por Cliente</h3>
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-            <thead>
-                <tr style="border-bottom: 2px solid #e2e8f0;">
-                    <th style="text-align: left; padding: 8px;">Cliente</th>
-                    <th style="text-align: right; padding: 8px;">Total Facturado</th>
-                    <th style="text-align: right; padding: 8px;">Total Cobrado</th>
-                    <th style="text-align: right; padding: 8px;">Saldo Pendiente</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cliente in clientes_deuda %}
-                <tr style="border-bottom: 1px solid #f7fafc;">
-                    <td style="padding: 8px;">{{ cliente.nombre }}</td>
-                    <td style="text-align: right; padding: 8px;">${{ cliente.total_facturado }}</td>
-                    <td style="text-align: right; padding: 8px;">${{ cliente.total_cobrado }}</td>
-                    <td style="text-align: right; padding: 8px; font-weight: 600; color: {% if cliente.saldo|float > 0 %}#f56565{% else %}#48bb78{% endif %};">
-                        ${{ cliente.saldo }}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<div class="dashboard-acciones-grid">
+    {% if puede_editar %}
+    <a href="{{ url_for('nuevo_cliente') }}" class="btn" style="text-align:center;">+ Nuevo Cliente</a>
+    <a href="{{ url_for('nuevo_proveedor') }}" class="btn" style="text-align:center;">+ Nuevo Proveedor</a>
+    <a href="{{ url_for('nuevo_producto') }}" class="btn" style="text-align:center;">+ Nuevo Producto</a>
+    <a href="{{ url_for('nuevo_pedido') }}" class="btn btn-success" style="text-align:center;">+ Nuevo Pedido</a>
+    <a href="{{ url_for('nueva_cobranza') }}" class="btn btn-success" style="text-align:center;">+ Nueva Cobranza</a>
+    {% endif %}
 </div>
 
-<div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-    <h3 style="margin: 0 0 15px 0; color: #667eea; font-size: 16px; font-weight: 600;">Deuda por Proveedor</h3>
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-            <thead>
-                <tr style="border-bottom: 2px solid #e2e8f0;">
-                    <th style="text-align: left; padding: 8px;">Proveedor</th>
-                    <th style="text-align: right; padding: 8px;">Total Facturado</th>
-                    <th style="text-align: right; padding: 8px;">Total Pagado</th>
-                    <th style="text-align: right; padding: 8px;">Saldo Pendiente</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for proveedor in proveedores_deuda %}
-                <tr style="border-bottom: 1px solid #f7fafc;">
-                    <td style="padding: 8px;">{{ proveedor.nombre }}</td>
-                    <td style="text-align: right; padding: 8px;">${{ proveedor.total_facturado }}</td>
-                    <td style="text-align: right; padding: 8px;">${{ proveedor.total_pagado }}</td>
-                    <td style="text-align: right; padding: 8px; font-weight: 600; color: {% if proveedor.saldo|float > 0 %}#f56565{% else %}#48bb78{% endif %};">
-                        ${{ proveedor.saldo }}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="dashboard-section-bar dashboard-section-bar-gestion">
+    <h2>Gestion</h2>
+</div>
+
+<div class="gestion-grid">
+    <div class="gestion-box gestion-box-pedidos-total">
+        <span class="gestion-box-label">Pedidos Totales</span>
+        <span class="gestion-box-value">{{ g.pedidos_totales | formato_entero }}</span>
+    </div>
+
+    <div class="gestion-box gestion-box-verde gestion-r1-c2">
+        <span class="gestion-box-label">Con Remito</span>
+        <span class="gestion-box-value">{{ g.con_remito | formato_entero }}</span>
+    </div>
+    <div class="gestion-box gestion-box-rojo gestion-r1-c3">
+        <span class="gestion-box-label">Sin Remito</span>
+        <span class="gestion-box-value">{{ g.sin_remito | formato_entero }}</span>
+    </div>
+    <div class="gestion-box gestion-box-verde gestion-r1-c4">
+        <span class="gestion-box-label">Entregados</span>
+        <span class="gestion-box-value">{{ g.entregados | formato_entero }}</span>
+    </div>
+    <div class="gestion-box gestion-box-rojo gestion-r1-c5">
+        <span class="gestion-box-label">Sin entregar</span>
+        <span class="gestion-box-value">{{ g.sin_entregar | formato_entero }}</span>
+    </div>
+
+    <div class="gestion-box gestion-box-verde gestion-r2-c2">
+        <span class="gestion-box-label">Cobrado Total</span>
+        <span class="gestion-box-value">{{ g.pedidos_cobrados | formato_entero }}</span>
+    </div>
+    <div class="gestion-box gestion-box-rojo gestion-r2-c3">
+        <span class="gestion-box-label">Sin cobrar</span>
+        <span class="gestion-box-value">{{ g.sin_cobrar | formato_entero }}</span>
+    </div>
+    <div class="gestion-box gestion-box-naranja gestion-r2-c4">
+        <span class="gestion-box-label">Parcial Cobrado</span>
+        <span class="gestion-box-value">{{ g.parcial_cobrado | formato_entero }}</span>
     </div>
 </div>
 
-<div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; gap: 15px; align-items: center;">
-    <div style="flex: 1;">
-        <label style="font-weight: 600; font-size: 13px; margin-bottom: 8px; display: block;">Filtrar por Cliente:</label>
-        <select id="selectorClientes" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px;">
-            <option value="">-- Todos --</option>
-            {% for cliente in todos_clientes %}
-            <option value="{{ cliente.id }}" {% if cliente.id|string in clientes_filtrados %}selected{% endif %}>
-                {{ cliente.nombre }}
-            </option>
-            {% endfor %}
-        </select>
+<div class="dashboard-kpi-section">
+<div class="dashboard-resumen-grid">
+    <div class="dashboard-panel dashboard-panel-resultados">
+        <div class="dashboard-panel-head">
+            <h2 class="dashboard-panel-title">Estado de Resultados</h2>
+        </div>
+        <div class="dashboard-panel-body">
+            <div class="dashboard-kpi-row">
+                <span class="kpi-verde">Ventas</span>
+                <span class="kpi-verde kpi-valor">{{ kpi.total_ventas | moneda }}</span>
+            </div>
+            <div class="dashboard-kpi-row">
+                <span class="kpi-rojo">Costo</span>
+                <span class="kpi-rojo kpi-valor">{{ kpi.total_costo | moneda }}</span>
+            </div>
+            <div class="dashboard-kpi-row dashboard-kpi-row-last">
+                <span class="kpi-azul">Resultado</span>
+                <span class="kpi-azul kpi-valor">{{ kpi.total_resultado | moneda }}</span>
+            </div>
+        </div>
     </div>
-    <button onclick="aplicarFiltroClientes()" class="btn" style="padding: 10px 20px; font-size: 12px; align-self: flex-end;">Aplicar Filtro</button>
-</div>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-    <div style="background: white; padding: 10px 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <h4 style="margin: 0 0 8px 0; color: #667eea; font-size: 12px; font-weight: 600;">Ventas por Mes</h4>
-        <canvas id="chartVentas" style="max-height: 120px;"></canvas>
+    <div class="dashboard-panel dashboard-panel-cobrado">
+        <div class="dashboard-panel-head">
+            <h2 class="dashboard-panel-title">Cobrado</h2>
+        </div>
+        <div class="dashboard-panel-body">
+            <div class="dashboard-kpi-row dashboard-kpi-cobrado-principal">
+                <span>Cobrado Total</span>
+                <span class="kpi-valor">{{ kpi.cobrado_total | moneda }}</span>
+            </div>
+            <div class="dashboard-kpi-row dashboard-kpi-cobrado-sec">
+                <span>Cobrado Costo</span>
+                <span class="kpi-valor">{{ kpi.cobrado_costo | moneda }}</span>
+            </div>
+            <div class="dashboard-kpi-row dashboard-kpi-cobrado-sec dashboard-kpi-row-last">
+                <span>Cobrado Comisión</span>
+                <span class="kpi-valor">{{ kpi.cobrado_comision | moneda }}</span>
+            </div>
+        </div>
     </div>
-    <div style="background: white; padding: 10px 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <h4 style="margin: 0 0 8px 0; color: #667eea; font-size: 12px; font-weight: 600;">Cobrado por Mes</h4>
-        <canvas id="chartGanancia" style="max-height: 120px;"></canvas>
+
+    <div class="dashboard-panel dashboard-panel-saldos">
+        <div class="dashboard-panel-head">
+            <h2 class="dashboard-panel-title">Saldos</h2>
+        </div>
+        <div class="dashboard-panel-body">
+            <div class="dashboard-kpi-row dashboard-kpi-saldo-principal">
+                <span>Saldo a Cobrar</span>
+                <span class="kpi-valor">{{ kpi.saldo_cobrar | moneda }}</span>
+            </div>
+            <div class="dashboard-kpi-row dashboard-kpi-saldo-sec">
+                <span>Saldo a Pagar Proveedores</span>
+                <span class="kpi-valor">{{ kpi.saldo_proveedor | moneda }}</span>
+            </div>
+            <div class="dashboard-kpi-row dashboard-kpi-saldo-sec dashboard-kpi-row-last">
+                <span>Saldo de Comisión</span>
+                <span class="kpi-valor">{{ kpi.saldo_comision | moneda }}</span>
+            </div>
+        </div>
     </div>
 </div>
-
-<div class="header" style="margin-top: 30px;">
-    <h2>Acciones Rápidas</h2>
 </div>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
-    <a href="{{ url_for('nuevo_cliente') }}" class="btn" style="text-align: center; display: flex; align-items: center; justify-content: center;">+ Nuevo Cliente</a>
-    <a href="{{ url_for('nuevo_proveedor') }}" class="btn" style="text-align: center; display: flex; align-items: center; justify-content: center;">+ Nuevo Proveedor</a>
-    <a href="{{ url_for('nuevo_producto') }}" class="btn" style="text-align: center; display: flex; align-items: center; justify-content: center;">+ Nuevo Producto</a>
-    <a href="{{ url_for('nuevo_pedido') }}" class="btn btn-success" style="text-align: center; display: flex; align-items: center; justify-content: center;">+ Nuevo Pedido</a>
-    <a href="{{ url_for('cuentas_por_cobrar') }}" class="btn" style="text-align: center; display: flex; align-items: center; justify-content: center; background: #f6ad55;">📊 Cuentas por Cobrar</a>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    const datosVentas = {{ ventas_por_mes | tojson }};
-    const datosGanancia = {{ ganancia_por_mes | tojson }};
-    
-    const optionsCompactas = {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: { 
-            legend: { display: false },
-            tooltip: { bodyFont: { size: 10 } }
-        },
-        scales: {
-            y: { beginAtZero: true, ticks: { font: { size: 9 } } },
-            x: { ticks: { font: { size: 9 } } }
-        }
-    };
-
-    new Chart(document.getElementById('chartVentas'), {
-        type: 'line',
-        data: {
-            labels: datosVentas.map(d => d.mes),
-            datasets: [{
-                label: 'Ventas',
-                data: datosVentas.map(d => d.total),
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: optionsCompactas
-    });
-
-    new Chart(document.getElementById('chartGanancia'), {
-        type: 'bar',
-        data: {
-            labels: datosGanancia.map(d => d.mes),
-            datasets: [{
-                label: 'Cobrado',
-                data: datosGanancia.map(d => d.total),
-                backgroundColor: '#48bb78',
-                borderRadius: 4
-            }]
-        },
-        options: optionsCompactas
-    });
-
-    function aplicarFiltroClientes() {
-        const selector = document.getElementById('selectorClientes');
-        const ids = Array.from(selector.selectedOptions).map(option => option.value);
-        if (ids.length > 0 && ids[0] !== "") {
-            window.location.href = `?clientes=${ids.join(',')}`;
-        } else {
+<style>
+.dashboard-hero {
+    background: #e879f9;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 10px rgba(192, 38, 211, 0.25);
+    text-align: center;
+}
+.dashboard-hero-title {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.dashboard-section-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+.dashboard-section-bar h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+}
+.dashboard-section-bar-acciones {
+    background: #4f46e5;
+}
+.dashboard-section-bar-gestion {
+    background: #0d9488;
+}
+.dashboard-acciones-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.gestion-grid {
+    display: grid;
+    grid-template-columns: 1.35fr repeat(4, 1fr);
+    grid-template-rows: 88px 88px;
+    gap: 18px 20px;
+    width: 100%;
+    margin-bottom: 28px;
+    align-items: stretch;
+}
+.gestion-box-pedidos-total { grid-column: 1; grid-row: 1 / 3; }
+.gestion-r1-c2 { grid-column: 2; grid-row: 1; }
+.gestion-r1-c3 { grid-column: 3; grid-row: 1; }
+.gestion-r1-c4 { grid-column: 4; grid-row: 1; }
+.gestion-r1-c5 { grid-column: 5; grid-row: 1; }
+.gestion-r2-c2 { grid-column: 2; grid-row: 2; }
+.gestion-r2-c3 { grid-column: 3; grid-row: 2; }
+.gestion-r2-c4 { grid-column: 4; grid-row: 2; }
+.gestion-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    min-width: 0;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+.gestion-box-label {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 6px;
+}
+.gestion-box-value {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+}
+.gestion-box-pedidos-total {
+    background: #dbeafe;
+    border-color: #93c5fd;
+}
+.gestion-box-pedidos-total .gestion-box-label { color: #1e40af; font-size: 16px; }
+.gestion-box-pedidos-total .gestion-box-value { color: #1d4ed8; font-size: 38px; }
+.gestion-box-verde {
+    background: #dcfce7;
+    border-color: #86efac;
+}
+.gestion-box-verde .gestion-box-label { color: #166534; }
+.gestion-box-verde .gestion-box-value { color: #15803d; }
+.gestion-box-rojo {
+    background: #fee2e2;
+    border-color: #fca5a5;
+}
+.gestion-box-rojo .gestion-box-label { color: #991b1b; }
+.gestion-box-rojo .gestion-box-value { color: #dc2626; }
+.gestion-box-naranja {
+    background: #ffedd5;
+    border-color: #fdba74;
+}
+.gestion-box-naranja .gestion-box-label { color: #c2410c; }
+.gestion-box-naranja .gestion-box-value { color: #ea580c; }
+@media (max-width: 1200px) {
+    .gestion-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto;
+    }
+    .gestion-box-pedidos-total,
+    .gestion-r1-c2, .gestion-r1-c3, .gestion-r1-c4, .gestion-r1-c5,
+    .gestion-r2-c2, .gestion-r2-c3, .gestion-r2-c4 {
+        grid-column: auto;
+        grid-row: auto;
+    }
+    .gestion-box-pedidos-total { grid-column: 1 / -1; min-height: 100px; }
+}
+.dashboard-kpi-section {
+    width: 100%;
+    margin-top: 4px;
+}
+.dashboard-resumen-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 48px;
+    width: 100%;
+    align-items: stretch;
+}
+.dashboard-panel {
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    min-width: 0;
+    min-height: 100%;
+}
+.dashboard-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 56px;
+    height: 56px;
+    padding: 0 14px;
+    flex-shrink: 0;
+}
+.dashboard-panel-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #fff;
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+.dashboard-panel-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 18px 16px;
+}
+.dashboard-panel-resultados .dashboard-panel-head { background: #1d4ed8; }
+.dashboard-panel-resultados .dashboard-panel-body { background: #dbeafe; }
+.dashboard-panel-cobrado .dashboard-panel-head { background: #15803d; }
+.dashboard-panel-cobrado .dashboard-panel-body { background: #dcfce7; }
+.dashboard-panel-saldos .dashboard-panel-head { background: #dc2626; }
+.dashboard-panel-saldos .dashboard-panel-body { background: #fee2e2; }
+.dashboard-kpi-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 40px;
+    height: 40px;
+    gap: 12px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.25;
+    margin: 0;
+}
+.dashboard-kpi-row span,
+.dashboard-kpi-row .kpi-valor { font-size: 13px; font-weight: 600; }
+.dashboard-kpi-row .kpi-valor { flex-shrink: 0; text-align: right; }
+.dashboard-kpi-row > span:first-child {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.dashboard-kpi-row-last {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+.kpi-verde { color: #166534; }
+.kpi-rojo { color: #b91c1c; }
+.kpi-azul { color: #1e40af; }
+.dashboard-kpi-cobrado-principal,
+.dashboard-kpi-cobrado-principal .kpi-valor { color: #14532d; }
+.dashboard-kpi-cobrado-sec,
+.dashboard-kpi-cobrado-sec .kpi-valor { color: #166534; }
+.dashboard-kpi-saldo-principal,
+.dashboard-kpi-saldo-principal .kpi-valor { color: #991b1b; }
+.dashboard-kpi-saldo-sec,
+.dashboard-kpi-saldo-sec .kpi-valor { color: #b45309; }
+@media (max-width: 1100px) {
+    .dashboard-resumen-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        max-width: 480px;
+    }
+    .dashboard-panel-title { white-space: normal; }
+}
+</style>
+{% endblock %}

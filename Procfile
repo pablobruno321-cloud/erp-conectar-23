@@ -1,1 +1,2 @@
-web: gunicorn --workers 4 --worker-class=sync --bind 0.0.0.0:$PORT "erp_app.app:app"
+web: gunicorn --workers 1 --threads 8 --timeout 120 wsgi:app
+release: python -c "from erp_app.app import app, init_db; init_db()"

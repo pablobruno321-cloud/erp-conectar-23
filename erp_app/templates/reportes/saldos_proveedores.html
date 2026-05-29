@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Saldos de Proveedores{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>💳 Saldos de Proveedores (CxP)</h1>
+        <button class="btn btn-primary" onclick="descargarExcel()">📥 Descargar Excel</button>
+    </div>
+    
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Proveedor</th>
+                        <th class="text-end">Compras</th>
+                        <th class="text-end">Pagado</th>
+                        <th class="text-end">Saldo</th>
+                        <th class="text-center">% Pagado</th>
+                        <th class="text-center">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in datos %}
+                    <tr>
+                        <td>{{ item.nombre }}</td>
+                        <td class="text-end">{{ item.compras | currency  }}</td>
+                        <td class="text-end text-success fw-bold">{{ item.pagado | currency  }}</td>
+                        <td class="text-end {% if item.saldo > 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                            {{ item.saldo | currency  }}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge {% if item.pct >= 100 %}bg-success{% elif item.pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ item.pct | formato_entero  }}%
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if item.saldo <= 0 %}
+                                <span class="badge bg-success">Pagado</span>
+                            {% elif item.pct > 0 %}
+                                <span class="badge bg-warning">Parcial</span>
+                            {% else %}
+                                <span class="badge bg-danger">Deuda</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light fw-bold">
+                    <tr>
+                        <td>TOTAL</td>
+                        <td class="text-end">{{ total_compras | currency  }}</td>
+                        <td class="text-end text-success">{{ total_pagado | currency  }}</td>
+                        <td class="text-end {% if total_saldo > 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ total_saldo | currency  }}
+                        </td>
+                        <td class="text-center">
+                            {% set pct_total = (total_pagado / total_compras * 100) if total_compras > 0 else 0 %}
+                            <span class="badge {% if pct_total >= 100 %}bg-success{% elif pct_total >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ pct_total | formato_entero  }}%
+                            </span>
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

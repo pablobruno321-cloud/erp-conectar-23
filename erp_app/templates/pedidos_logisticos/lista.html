@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Pedidos Logísticos - ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pedidos_logisticos.css') }}?v=3">
+{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>Pedidos Logísticos</h2>
+    <p style="margin:4px 0 0;color:#718096;font-size:14px;">Vista de carga por fecha y transporte — datos desde pedidos</p>
+</div>
+
+<form method="get" class="pl-filtros" id="formFiltros">
+    <div class="campo">
+        <label class="lbl-fecha" for="fecha_carga">Fecha de carga</label>
+        <select name="fecha_carga" id="fecha_carga" required>
+            <option value="">— Seleccionar —</option>
+            {% for f in fechas %}
+            <option value="{{ f.iso }}" {% if fecha_sel == f.iso %}selected{% endif %}>{{ f.label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="campo">
+        <label class="lbl-tpte" for="prov_logistico_id">Proveedor logístico</label>
+        <select name="prov_logistico_id" id="prov_logistico_id" required>
+            <option value="">— Seleccionar —</option>
+        </select>
+    </div>
+    <div class="campo" style="padding-bottom:2px;">
+        <button type="submit" class="btn btn-primary" style="margin-top:22px;">Ver</button>
+    </div>
+</form>
+
+<div class="pl-wrap">
+<table class="pl-tabla" id="tablaPedidosLog">
+    <thead>
+        <tr class="titulos">
+            <th class="pl-g-ped">N° Pedido</th>
+            <th class="pl-g-log">Fecha Carga</th>
+            <th class="pl-g-log">Tpte</th>
+            <th class="pl-g-log">Fruta</th>
+            <th class="pl-g-log">Clasificación</th>
+            <th class="pl-g-log">Envase</th>
+            <th class="pl-g-log">Pallets</th>
+            <th class="pl-g-log">Bultos</th>
+            <th class="pl-g-prov">Proveedor</th>
+            <th class="pl-g-cli">Cliente</th>
+            <th class="pl-g-cli">Mercado</th>
+            <th class="pl-g-cli">Puesto</th>
+            <th class="pl-g-cli">CUIT</th>
+            <th class="pl-g-cli">Dirección</th>
+            <th class="pl-g-cli">Teléfono</th>
+        </tr>
+    </thead>
+    <tbody id="cuerpoPedidosLog">
+        {% if filas %}
+        {% for r in filas %}
+        <tr>
+            <td class="pl-g-ped"><a href="{{ url_for('ver_pedido', id=r.pedido_id) }}" target="_blank" rel="noopener" class="pl-link-pedido">{{ r.pedido_numero }}</a></td>
+            <td class="pl-g-log">{{ r.fecha_carga_fmt }}</td>
+            <td class="pl-g-log">{{ r.tpte }}</td>
+            <td class="pl-g-log">{{ r.fruta }}</td>
+            <td class="pl-g-log">{{ r.clasificacion }}</td>
+            <td class="pl-g-log">{{ r.envase }}</td>
+            <td class="pl-g-log">{{ r.pallets }}</td>
+            <td class="pl-g-log">{{ r.bultos }}</td>
+            <td class="pl-g-prov">{{ r.proveedor }}</td>
+            <td class="pl-g-cli pl-cli-nombre">{{ r.cliente }}</td>
+            <td class="pl-g-cli">{{ r.mercado }}</td>
+            <td class="pl-g-cli">{{ r.puesto }}</td>
+            <td class="pl-g-cli">{{ r.cuit }}</td>
+            <td class="pl-g-cli pl-dir">{{ r.direccion }}</td>
+            <td class="pl-g-cli">{{ r.telefono }}</td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+            <td colspan="15" class="pl-vacio">
+                {% if fecha_sel and prov_sel %}
+                No hay líneas de pedido para esta fecha y transporte.
+                {% else %}
+                Seleccioná fecha de carga y proveedor logístico para ver el detalle.
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>
+
+<script>
+(function() {
+    const PROV_POR_FECHA = {{ prov_por_fecha_json|safe }};
+    const provSel = {{ prov_sel|tojson }};
+    const selFecha = document.getElementById('fecha_carga');
+    const selProv = document.getElementById('prov_logistico_id');
+
+    function llenarProveedores(fechaIso, mantenerId) {
+        const lista = PROV_POR_FECHA[fechaIso] || [];
+        const prev = mantenerId || selProv.value;
+        selProv.innerHTML = '<option value="">— Seleccionar —</option>';
+        lista.forEach(p => {
+            const o = document.createElement('option');
+            o.value = p.id;
+            o.textContent = p.nombre;
+            if (String(p.id) === String(prev)) o.selected = true;
+            selProv.appendChild(o);
+        });
+    }
+
+    selFecha.addEventListener('change', function() {
+        llenarProveedores(this.value, null);
+    });
+
+    if (selFecha.value) {
+        llenarProveedores(selFecha.value, provSel);
+    }
+})();
+</script>
+{% endblock %}

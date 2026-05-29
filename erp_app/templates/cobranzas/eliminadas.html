@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Cobranzas eliminadas{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>Cobranzas eliminadas</h2>
+    <a href="{{ url_for('listar_cobranzas') }}" class="btn btn-secondary">Volver a Cobranzas</a>
+</div>
+
+<p style="color:#718096;margin-bottom:20px;">Estas cobranzas no se incluyen en saldos, aging ni otros informes. Podés restaurarlas si fue un error.</p>
+
+{% if cobranzas %}
+<table>
+    <thead>
+        <tr>
+            <th>Fecha cobro</th>
+            <th>Cliente</th>
+            <th style="text-align:right;">Monto</th>
+            <th>Eliminada</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cob in cobranzas %}
+        <tr>
+            <td>{{ cob.fecha_cobranza.strftime('%d/%m/%Y') if cob.fecha_cobranza else '-' }}</td>
+            <td>{{ cob.cliente.nombre }}</td>
+            <td style="text-align:right;">{{ cob.monto | moneda }}</td>
+            <td>{{ cob.fecha_eliminacion.strftime('%d/%m/%Y %H:%M') if cob.fecha_eliminacion else '-' }}</td>
+            <td>
+                <button type="button" class="btn btn-success" style="font-size:12px;padding:6px 12px;" onclick="restaurar({{ cob.id }})">Restaurar</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="text-align:center;color:#a0aec0;padding:40px;">No hay cobranzas eliminadas.</p>
+{% endif %}
+
+<script>
+function restaurar(id) {
+    if (!confirm('¿Restaurar esta cobranza? Volverá a impactar en saldos e informes.')) return;
+    fetch('/cobranzas/' + id + '/restaurar', { method: 'POST' })
+        .then(r => r.json()).then(d => { if (d.success) location.reload(); else alert(d.error); });
+}
+</script>
+{% endblock %}

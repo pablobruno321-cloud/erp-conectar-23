@@ -3,9 +3,63 @@
 {% block title %}Cotizaciones - ERP{% endblock %}
 
 {% block content %}
-<div class="header">
-    <h2>Cotizaciones</h2>
-    <div>
+<div class="header" style="flex-wrap:wrap;gap:12px;">
+    <h2 style="flex:0 0 auto;">Cotizaciones</h2>
+    <div style="flex:1 1 100%;min-width:0;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:flex-end;">
+        <form method="GET" action="{{ url_for('listar_cotizaciones') }}" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));gap:10px;align-items:end;flex:1 1 520px;min-width:0;max-width:100%;">
+            <div>
+                <div style="font-size:11px;font-weight:700;color:#4a5568;margin-bottom:4px;">ESTADO</div>
+                <select name="estado" style="width:100%;padding:6px;font-size:12px;">
+                    <option value="todos" {% if filtros and filtros.estado=='todos' %}selected{% endif %}>Todos</option>
+                    <option value="activos" {% if filtros and filtros.estado=='activos' %}selected{% endif %}>Activos</option>
+                    <option value="inactivos" {% if filtros and filtros.estado=='inactivos' %}selected{% endif %}>Inactivos</option>
+                </select>
+            </div>
+            <div>
+                <div style="font-size:11px;font-weight:700;color:#4a5568;margin-bottom:4px;">FECHA</div>
+                <input type="date" name="fecha" value="{{ filtros.fecha if filtros else '' }}" style="width:100%;padding:6px;font-size:12px;">
+            </div>
+            <div>
+                <div style="font-size:11px;font-weight:700;color:#4a5568;margin-bottom:4px;">FRUTA</div>
+                <select name="fruta" style="width:100%;padding:6px;font-size:12px;">
+                    <option value="">Todas</option>
+                    {% for f in frutas %}
+                    <option value="{{ f }}" {% if filtros and filtros.fruta==f %}selected{% endif %}>{{ f }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <div style="font-size:11px;font-weight:700;color:#4a5568;margin-bottom:4px;">VARIEDAD</div>
+                <select name="variedad" style="width:100%;padding:6px;font-size:12px;">
+                    <option value="">Todas</option>
+                    {% for v in variedades %}
+                    <option value="{{ v }}" {% if filtros and filtros.variedad==v %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <div style="font-size:11px;font-weight:700;color:#4a5568;margin-bottom:4px;">CLASIFICACIÓN</div>
+                <select name="clasificacion" style="width:100%;padding:6px;font-size:12px;">
+                    <option value="">Todas</option>
+                    {% for c in clasificaciones %}
+                    <option value="{{ c }}" {% if filtros and filtros.clasificacion==c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <div style="font-size:11px;font-weight:700;color:#4a5568;margin-bottom:4px;">ENVASE</div>
+                <select name="envase" style="width:100%;padding:6px;font-size:12px;">
+                    <option value="">Todas</option>
+                    {% for e in envases %}
+                    <option value="{{ e }}" {% if filtros and filtros.envase==e %}selected{% endif %}>{{ e }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="grid-column: 1 / -1; display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn" style="padding:6px 12px;font-size:12px;" type="submit">Aplicar</button>
+                <a class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" href="{{ url_for('listar_cotizaciones') }}">Limpiar</a>
+            </div>
+        </form>
         <span style="margin-right: 20px; font-size: 12px;">
             <strong>Margen por Defecto:</strong> 
             <input type="number" id="margenDefault" value="{{ margen_default }}" style="width: 60px; padding: 5px;" step="0.1" min="0">
@@ -15,14 +69,20 @@
     </div>
 </div>
 
-{% if cotizaciones %}
-<div style="overflow-x: auto;">
+{% if filas and filas|length %}
+<div class="table-scroll">
 <table id="tablaCotizaciones" class="tabla-filtrable">
     <thead>
         <tr>
-            <th data-col="producto">Producto <span class="filtro-btn">⋮</span></th>
-            <th data-col="fecha_desde">Desde <span class="filtro-btn">⋮</span></th>
-            <th data-col="fecha_hasta">Hasta <span class="filtro-btn">⋮</span></th>
+            <th data-col="fecha_desde">Vigencia Desde <span class="filtro-btn">⋮</span></th>
+            <th data-col="fecha_hasta">Vigencia Hasta <span class="filtro-btn">⋮</span></th>
+            <th data-col="proveedor">Proveedor <span class="filtro-btn">⋮</span></th>
+            <th data-col="fruta">Fruta <span class="filtro-btn">⋮</span></th>
+            <th data-col="variedad">Variedad <span class="filtro-btn">⋮</span></th>
+            <th data-col="clasificacion">Clasificación <span class="filtro-btn">⋮</span></th>
+            <th data-col="envase">Envase <span class="filtro-btn">⋮</span></th>
+            <th data-col="kilogramo">Kg <span class="filtro-btn">⋮</span></th>
+            <th data-col="marca">Marca <span class="filtro-btn">⋮</span></th>
             <th data-col="costo">Costo $ <span class="filtro-btn">⋮</span></th>
             <th data-col="margen">Margen % <span class="filtro-btn">⋮</span></th>
             <th data-col="precio_venta">Precio Venta $ <span class="filtro-btn">⋮</span></th>
@@ -31,23 +91,37 @@
         </tr>
     </thead>
     <tbody>
-        {% for cot in cotizaciones %}
+        {% for fila in filas %}
+        {% set cot = fila.cot %}
+        {% set estado_vig = 'Activo' if fila.vigente else 'Inactivo' %}
         <tr class="fila-datos" 
-            data-producto="{{ cot.producto.nombre.lower() }}"
+            data-proveedor="{{ cot.producto.proveedor.nombre.lower() }}"
+            data-fruta="{{ cot.producto.fruta.lower() }}"
+            data-variedad="{{ (cot.producto.variedad or '').lower() }}"
+            data-clasificacion="{{ (cot.producto.clasificacion or '').lower() }}"
+            data-envase="{{ (cot.producto.envase or '').lower() }}"
+            data-kilogramo="{{ (cot.producto.kilogramo or '').lower() }}"
+            data-marca="{{ (cot.producto.marca or '').lower() }}"
             data-fecha_desde="{{ cot.fecha_desde }}"
             data-fecha_hasta="{{ cot.fecha_hasta }}"
             data-costo="{{ cot.costo_unitario }}"
             data-margen="{{ cot.margen_ganancia }}"
-            data-precio_venta="{{ cot.precio_venta }}"
-            data-estado="{{ 'Activo' if cot.activo else 'Inactivo' }}">
-            <td>{{ cot.producto.nombre }}</td>
+            data-precio_venta="{{ cot.precio_unitario }}"
+            data-estado="{{ estado_vig }}">
             <td>{{ cot.fecha_desde.strftime('%d/%m/%Y') }}</td>
             <td>{{ cot.fecha_hasta.strftime('%d/%m/%Y') }}</td>
+            <td>{{ cot.producto.proveedor.nombre }}</td>
+            <td>{{ cot.producto.fruta }}</td>
+            <td>{{ cot.producto.variedad or '-' }}</td>
+            <td>{{ cot.producto.clasificacion or '-' }}</td>
+            <td>{{ cot.producto.envase or '-' }}</td>
+            <td>{{ cot.producto.kilogramo or '-' }}</td>
+            <td>{{ cot.producto.marca or '-' }}</td>
             <td style="text-align: right;">${{ cot.costo_unitario | eur }}</td>
-            <td style="text-align: center;">{{ cot.margen_ganancia }}%</td>
-            <td style="text-align: right;">${{ cot.precio_venta | eur }}</td>
+            <td style="text-align: center;">{{ formatear_numero_ar(cot.margen_ganancia, 2) }}%</td>
+            <td style="text-align: right;">${{ cot.precio_unitario | eur }}</td>
             <td>
-                {% if cot.activo %}
+                {% if fila.vigente %}
                 <span class="badge badge-success">Activo</span>
                 {% else %}
                 <span class="badge badge-danger">Inactivo</span>

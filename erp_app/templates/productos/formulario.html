@@ -13,13 +13,8 @@
 </div>
 {% endif %}
 
-<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px;">
-    <form method="POST">
-        <div class="form-group">
-            <label for="nombre">Nombre *</label>
-            <input type="text" id="nombre" name="nombre" value="{{ producto.nombre if producto else '' }}" required>
-        </div>
-        
+<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 700px;">
+    <form method="POST" id="productoForm">
         <div class="form-group">
             <label for="proveedor_id">Proveedor *</label>
             <select id="proveedor_id" name="proveedor_id" required>
@@ -29,25 +24,80 @@
                 {% endfor %}
             </select>
         </div>
+
+        <div class="form-group">
+            <label for="fruta">Fruta *</label>
+            <select id="fruta" name="fruta" required onchange="handleMaestroSelectChange('fruta')">
+                <option value="">Seleccionar fruta</option>
+                {% for item in frutas %}
+                <option value="{{ item.valor }}" {% if producto and producto.fruta == item.valor %}selected{% endif %}>{{ item.valor }}</option>
+                {% endfor %}
+                {% if producto and producto.fruta and producto.fruta not in frutas|map(attribute='valor')|list %}
+                <option value="{{ producto.fruta }}" selected>{{ producto.fruta }}</option>
+                {% endif %}
+                <option value="__nuevo__">Cargar nueva...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="variedad">Variedad</label>
+            <select id="variedad" name="variedad" onchange="handleMaestroSelectChange('variedad')">
+                <option value="">Seleccionar variedad</option>
+                {% for item in variedades %}
+                <option value="{{ item.valor }}" {% if producto and producto.variedad == item.valor %}selected{% endif %}>{{ item.valor }}</option>
+                {% endfor %}
+                {% if producto and producto.variedad and producto.variedad not in variedades|map(attribute='valor')|list %}
+                <option value="{{ producto.variedad }}" selected>{{ producto.variedad }}</option>
+                {% endif %}
+                <option value="__nuevo__">Cargar nueva...</option>
+            </select>
+        </div>
         
         <div class="form-group">
             <label for="clasificacion">Clasificación</label>
-            <input type="text" id="clasificacion" name="clasificacion" value="{{ producto.clasificacion if producto else '' }}">
-        </div>
-        
-        <div class="form-group">
-            <label for="variedad">Variedad</label>
-            <input type="text" id="variedad" name="variedad" value="{{ producto.variedad if producto else '' }}">
-        </div>
-        
-        <div class="form-group">
-            <label for="marca">Marca</label>
-            <input type="text" id="marca" name="marca" value="{{ producto.marca if producto else '' }}">
+            <select id="clasificacion" name="clasificacion" onchange="handleMaestroSelectChange('clasificacion')">
+                <option value="">Seleccionar clasificación</option>
+                {% for item in clasificaciones %}
+                <option value="{{ item.valor }}" {% if producto and producto.clasificacion == item.valor %}selected{% endif %}>{{ item.valor }}</option>
+                {% endfor %}
+                {% if producto and producto.clasificacion and producto.clasificacion not in clasificaciones|map(attribute='valor')|list %}
+                <option value="{{ producto.clasificacion }}" selected>{{ producto.clasificacion }}</option>
+                {% endif %}
+                <option value="__nuevo__">Cargar nueva...</option>
+            </select>
         </div>
         
         <div class="form-group">
             <label for="envase">Envase</label>
-            <input type="text" id="envase" name="envase" value="{{ producto.envase if producto else '' }}">
+            <select id="envase" name="envase" onchange="handleMaestroSelectChange('envase')">
+                <option value="">Seleccionar envase</option>
+                {% for item in envases %}
+                <option value="{{ item.valor }}" {% if producto and producto.envase == item.valor %}selected{% endif %}>{{ item.valor }}</option>
+                {% endfor %}
+                {% if producto and producto.envase and producto.envase not in envases|map(attribute='valor')|list %}
+                <option value="{{ producto.envase }}" selected>{{ producto.envase }}</option>
+                {% endif %}
+                <option value="__nuevo__">Cargar nueva...</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="kilogramo">Kilogramo</label>
+            <input type="text" id="kilogramo" name="kilogramo" value="{{ producto.kilogramo if producto else '' }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="marca">Marca</label>
+            <select id="marca" name="marca" onchange="handleMaestroSelectChange('marca')">
+                <option value="">Seleccionar marca</option>
+                {% for item in marcas %}
+                <option value="{{ item.valor }}" {% if producto and producto.marca == item.valor %}selected{% endif %}>{{ item.valor }}</option>
+                {% endfor %}
+                {% if producto and producto.marca and producto.marca not in marcas|map(attribute='valor')|list %}
+                <option value="{{ producto.marca }}" selected>{{ producto.marca }}</option>
+                {% endif %}
+                <option value="__nuevo__">Cargar nueva...</option>
+            </select>
         </div>
         
         <div class="form-group">
@@ -60,5 +110,164 @@
             <a href="{{ url_for('listar_productos') }}" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
+
+    <div id="maestrosPanel" style="margin-top: 30px;">
+        {% for tipo, titulo, items in [('fruta', 'Frutas', frutas), ('variedad', 'Variedades', variedades), ('clasificacion', 'Clasificaciones', clasificaciones), ('envase', 'Envases', envases), ('marca', 'Marcas', marcas)] %}
+        <div class="maestro-panel" id="panel-{{ tipo }}" style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; overflow: hidden;">
+            <div class="maestro-header" style="display: flex; justify-content: space-between; align-items: center; background: #f7fafc; padding: 12px 16px; cursor: pointer;" onclick="toggleMaestroPanel('{{ tipo }}')">
+                <strong>{{ titulo }}</strong>
+                <span class="toggle-icon" id="toggle-icon-{{ tipo }}">+</span>
+            </div>
+            <div class="maestro-body" id="body-{{ tipo }}" style="display: none; padding: 16px; background: #ffffff;">
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px;">
+                    <input type="text" id="nuevo-{{ tipo }}" placeholder="Nueva {{ titulo[:-1] }}" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+                    <button type="button" class="btn btn-secondary" onclick="guardarMaestro('{{ tipo }}')">Agregar</button>
+                </div>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">Valor</th>
+                            <th style="text-align: right; padding: 8px; border-bottom: 1px solid #e2e8f0; width: 180px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-{{ tipo }}">
+                        {% for item in items %}
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #f2f2f2;">{{ item.valor }}</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #f2f2f2; text-align: right;">
+                                <button type="button" class="btn btn-secondary" onclick="editarMaestro({{ item.id }}, '{{ tipo }}', '{{ item.valor | replace("'", "\'") }}')">Editar</button>
+                                <button type="button" class="btn btn-danger" onclick="eliminarMaestro({{ item.id }}, '{{ tipo }}')">Eliminar</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </div>
+
+<script>
+function toggleMaestroPanel(tipo) {
+    const body = document.getElementById('body-' + tipo);
+    const icon = document.getElementById('toggle-icon-' + tipo);
+    const isOpen = body.style.display === 'block';
+    body.style.display = isOpen ? 'none' : 'block';
+    icon.textContent = isOpen ? '+' : '−';
+}
+
+function handleMaestroSelectChange(tipo) {
+    const select = document.getElementById(tipo);
+    if (!select) return;
+    if (select.value === '__nuevo__') {
+        const body = document.getElementById('body-' + tipo);
+        const icon = document.getElementById('toggle-icon-' + tipo);
+        if (body.style.display !== 'block') {
+            body.style.display = 'block';
+            icon.textContent = '−';
+        }
+        document.getElementById('nuevo-' + tipo).focus();
+        select.value = '';
+    }
+}
+
+function guardarMaestro(tipo) {
+    const input = document.getElementById('nuevo-' + tipo);
+    const valor = input.value.trim();
+    if (!valor) {
+        alert('Ingrese un valor para ' + tipo);
+        return;
+    }
+    fetch(`/productos/maestros/${tipo}/nuevo`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({valor})
+    }).then(res => res.json()).then(data => {
+        if (!data.success) {
+            alert(data.error || 'Error al guardar');
+            return;
+        }
+        input.value = '';
+        refreshMaestro(tipo).then(() => {
+            const select = document.getElementById(tipo);
+            if (select) {
+                select.value = valor;
+            }
+        });
+    }).catch(() => alert('Error de red.'));
+}
+
+function editarMaestro(id, tipo, valorActual) {
+    const nuevoValor = prompt('Editar valor', valorActual);
+    if (nuevoValor === null) return;
+    const valor = nuevoValor.trim();
+    if (!valor) {
+        alert('Valor no puede estar vacío');
+        return;
+    }
+    fetch(`/productos/maestros/${id}/editar`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({valor})
+    }).then(res => res.json()).then(data => {
+        if (!data.success) {
+            alert(data.error || 'Error al editar');
+            return;
+        }
+        refreshMaestro(tipo);
+    }).catch(() => alert('Error de red.'));
+}
+
+function eliminarMaestro(id, tipo) {
+    if (!confirm('¿Eliminar este valor?')) return;
+    fetch(`/productos/maestros/${id}/eliminar`, {method: 'POST'}).then(res => res.json()).then(data => {
+        if (!data.success) {
+            alert(data.error || 'Error al eliminar');
+            return;
+        }
+        refreshMaestro(tipo);
+    }).catch(() => alert('Error de red.'));
+}
+
+function refreshMaestro(tipo) {
+    return fetch(`/productos/maestros/${tipo}`).then(res => res.json()).then(items => {
+        const select = document.getElementById(tipo);
+        if (select) {
+            const current = select.value;
+            select.innerHTML = '<option value="">Seleccionar ' + tipo + '</option>';
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.valor;
+                opt.textContent = item.valor;
+                select.appendChild(opt);
+            });
+            const optNuevo = document.createElement('option');
+            optNuevo.value = '__nuevo__';
+            optNuevo.textContent = 'Cargar nueva...';
+            select.appendChild(optNuevo);
+            if (current && Array.from(select.options).some(o => o.value === current)) {
+                select.value = current;
+            } else {
+                select.value = '';
+            }
+        }
+        const tbody = document.getElementById('tabla-' + tipo);
+        if (tbody) {
+            tbody.innerHTML = '';
+            items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding: 8px; border-bottom: 1px solid #f2f2f2;">${item.valor}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #f2f2f2; text-align: right;">
+                        <button type="button" class="btn btn-secondary" onclick="editarMaestro(${item.id}, '${tipo}', '${item.valor.replace(/'/g, "\\'")}')">Editar</button>
+                        <button type="button" class="btn btn-danger" onclick="eliminarMaestro(${item.id}, '${tipo}')">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    });
+}
+</script>
 {% endblock %}

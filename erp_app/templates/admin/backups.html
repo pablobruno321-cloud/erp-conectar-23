@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Backups - ERP{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>Backups de producción</h2>
+    <form method="post" style="display: inline;">
+        <button type="submit" class="btn btn-success">💾 Crear backup ahora (SQLite + Excel)</button>
+    </form>
+</div>
+
+<p style="color: #555; margin-bottom: 24px; max-width: 720px;">
+    Dos copias independientes: <strong>SQLite</strong> (restauración completa del sistema) y
+    <strong>Excel</strong> (lectura y auditoría por tablas). Antes de salir a productivo o de un cambio grande, ejecutá un backup manual.
+</p>
+
+{% if mensaje %}
+<div style="background: #c6f6d5; border: 1px solid #9ae6b4; color: #22543d; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">
+    {{ mensaje }}
+    {% if resultado %}
+    <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 13px;">
+        <li><strong>SQLite:</strong> {{ resultado.sqlite }}</li>
+        <li><strong>Excel:</strong> {{ resultado.excel }}</li>
+    </ul>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if error %}
+<div style="background: #fed7d7; border: 1px solid #feb2b2; color: #742a2a; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">
+    Error: {{ error }}
+</div>
+{% endif %}
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <div>
+        <h3 style="margin-bottom: 12px;">Backup 1 — SQLite</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 8px;">Carpeta: <code>{{ backups.carpeta_sqlite }}</code></p>
+        {% if backups.sqlite %}
+        <table class="table" style="font-size: 13px;">
+            <thead>
+                <tr style="background: #f7fafc;">
+                    <th style="padding: 10px; text-align: left;">Archivo</th>
+                    <th style="padding: 10px; text-align: left;">Fecha</th>
+                    <th style="padding: 10px; text-align: right;">Tamaño</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in backups.sqlite %}
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px;"><code>{{ b.nombre }}</code></td>
+                    <td style="padding: 10px;">{{ b.fecha }}</td>
+                    <td style="padding: 10px; text-align: right;">{{ b.tamano_kb }} KB</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #999;">Aún no hay backups SQLite.</p>
+        {% endif %}
+    </div>
+
+    <div>
+        <h3 style="margin-bottom: 12px;">Backup 2 — Excel</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 8px;">Carpeta: <code>{{ backups.carpeta_excel }}</code></p>
+        {% if backups.excel %}
+        <table class="table" style="font-size: 13px;">
+            <thead>
+                <tr style="background: #f7fafc;">
+                    <th style="padding: 10px; text-align: left;">Archivo</th>
+                    <th style="padding: 10px; text-align: left;">Fecha</th>
+                    <th style="padding: 10px; text-align: right;">Tamaño</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in backups.excel %}
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px;"><code>{{ b.nombre }}</code></td>
+                    <td style="padding: 10px;">{{ b.fecha }}</td>
+                    <td style="padding: 10px; text-align: right;">{{ b.tamano_kb }} KB</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #999;">Aún no hay backups Excel.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div style="margin-top: 32px; padding: 16px; background: #edf2f7; border-radius: 8px; font-size: 13px; color: #4a5568;">
+    <strong>Consola / programado:</strong>
+    <code style="display: block; margin-top: 8px;">python scripts/backup_completo.py</code>
+    Copiá periódicamente la carpeta <code>backups/</code> a la nube o un disco externo.
+</div>
+{% endblock %}

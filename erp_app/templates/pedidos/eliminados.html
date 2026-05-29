@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Pedidos Eliminados{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>Pedidos Eliminados</h2>
+    <a href="{{ url_for('listar_pedidos') }}" class="btn btn-secondary">Volver a Pedidos</a>
+</div>
+
+{% if pedidos %}
+<table>
+    <thead>
+        <tr>
+            <th>N°</th>
+            <th>Cliente</th>
+            <th>Fecha venta</th>
+            <th>PV Total</th>
+            <th>Eliminado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in pedidos %}
+        <tr>
+            <td><strong>{{ p.numero }}</strong></td>
+            <td>{{ p.cliente.nombre }}</td>
+            <td>{{ p.fecha_venta.strftime('%d/%m/%Y') if p.fecha_venta else '-' }}</td>
+            <td>${{ p.precio_venta_total | formato_numero }}</td>
+            <td>{{ p.fecha_eliminacion.strftime('%d/%m/%Y %H:%M') if p.fecha_eliminacion else '-' }}</td>
+            <td>
+                <button class="btn btn-success" style="font-size:12px;padding:6px 12px;" onclick="restaurar({{ p.id }})">Restaurar</button>
+                <a href="{{ url_for('ver_pedido', id=p.id) }}" class="btn" style="font-size:12px;padding:6px 12px;">Ver</a>
+                <button class="btn btn-danger" style="font-size:12px;padding:6px 12px;" onclick="borrarDefinitivo({{ p.id }}, '{{ p.numero }}')">Borrar definitivo</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color:#a0aec0;text-align:center;padding:40px;">No hay pedidos eliminados.</p>
+{% endif %}
+
+<script>
+function restaurar(id) {
+    if (!confirm('¿Restaurar este pedido con todos sus datos?')) return;
+    fetch('/pedidos/' + id + '/restaurar', { method: 'POST' })
+        .then(r => r.json()).then(d => { if (d.success) location.reload(); else alert(d.error); });
+}
+
+function borrarDefinitivo(id, numero) {
+    if (!confirm('¿Borrar DEFINITIVAMENTE el pedido \"' + numero + '\"? Esta acción no se puede deshacer.')) return;
+    fetch('/pedidos/' + id + '/borrar-definitivo', { method: 'POST' })
+        .then(r => r.json()).then(d => { if (d.success) location.reload(); else alert(d.error || 'Error'); });
+}
+</script>
+{% endblock %}

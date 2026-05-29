@@ -4,80 +4,120 @@
 
 {% block content %}
 <div class="header">
-    <h2>Productos</h2>
-    <a href="{{ url_for('nuevo_producto') }}" class="btn btn-success">+ Nuevo Producto</a>
+    <h2>Productos por Proveedor</h2>
 </div>
 
-{% if productos %}
+<div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <input type="text" id="filtro" placeholder="Buscar proveedor..." style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+</div>
+
+{% if proveedores %}
 <table>
     <thead>
         <tr>
-            <th>Nombre</th>
+            <th style="width: 40px;"></th>
             <th>Proveedor</th>
-            <th>Clasificación</th>
-            <th>Variedad</th>
-            <th>Costo Unit.</th>
-            <th>Stock</th>
-            <th>Estado</th>
+            <th>Productos</th>
             <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
-        {% for producto in productos %}
-        <tr>
-            <td><strong>{{ producto.nombre }}</strong></td>
-            <td>{{ producto.proveedor.nombre }}</td>
-            <td>{{ producto.clasificacion or '-' }}</td>
-            <td>{{ producto.variedad or '-' }}</td>
-            <td>${{ "%.2f"|format(producto.costo_unitario) }}</td>
-            <td>{{ producto.stock }}</td>
+        {% for proveedor in proveedores %}
+        {% set productos = productos_por_proveedor.get(proveedor.id, []) %}
+        <tr class="fila-proveedor" data-busqueda="{{ proveedor.nombre.lower() }}">
             <td>
-                {% if producto.activo %}
-                <span class="badge badge-success">Activo</span>
+                {% if productos %}
+                <button type="button" class="btn-toggle" onclick="toggleProductos({{ proveedor.id }})" id="btn-{{ proveedor.id }}">+</button>
                 {% else %}
-                <span class="badge badge-danger">Inactivo</span>
+                <span style="color:#cbd5e0;">—</span>
                 {% endif %}
             </td>
+            <td><strong>{{ proveedor.nombre }}</strong></td>
+            <td>{{ productos|length }} combinación(es)</td>
             <td class="actions">
-                <a href="{{ url_for('editar_producto', id=producto.id) }}" class="btn" style="padding: 8px 15px; font-size: 12px;">Editar</a>
-                <button onclick="eliminar({{ producto.id }}, '{{ producto.nombre }}')" class="btn btn-danger" style="padding: 8px 15px; font-size: 12px;">Eliminar</button>
+                <a href="{{ url_for('gestionar_productos_proveedor', proveedor_id=proveedor.id) }}" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;">Gestionar productos</a>
             </td>
         </tr>
+        {% if productos %}
+        <tr id="detalle-{{ proveedor.id }}" class="fila-detalle" style="display: none;">
+            <td colspan="4" style="padding: 0; background: #f7fafc;">
+                <table style="width: 100%; margin: 0; box-shadow: none;">
+                    <thead>
+                        <tr>
+                            <th>Fruta</th>
+                            <th>Variedad</th>
+                            <th>Clasificación</th>
+                            <th>Envase</th>
+                            <th>Kg</th>
+                            <th>Marca</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in productos %}
+                        <tr>
+                            <td>{{ p.fruta }}</td>
+                            <td>{{ p.variedad or '-' }}</td>
+                            <td>{{ p.clasificacion or '-' }}</td>
+                            <td>{{ p.envase or '-' }}</td>
+                            <td>{{ p.kilogramo or '-' }}</td>
+                            <td>{{ p.marca or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div style="padding: 12px 16px; border-top: 1px solid #e2e8f0;">
+                    <a href="{{ url_for('gestionar_productos_proveedor', proveedor_id=proveedor.id) }}" class="btn" style="font-size: 12px;">+ Cargar nuevo producto</a>
+                </div>
+            </td>
+        </tr>
+        {% else %}
+        <tr class="fila-detalle-vacia" data-busqueda="{{ proveedor.nombre.lower() }}" style="display: none;">
+            <td colspan="4"></td>
+        </tr>
+        {% endif %}
         {% endfor %}
+        <tr>
+            <td colspan="4" style="text-align: center; padding: 20px; background: #edf2f7;">
+                <a href="{{ url_for('nuevo_producto') }}" class="btn btn-success">+ Cargar proveedor / productos</a>
+            </td>
+        </tr>
     </tbody>
 </table>
 {% else %}
 <div class="header" style="text-align: center; color: #a0aec0;">
-    <p>No hay productos aún. <a href="{{ url_for('nuevo_producto') }}">Crear el primer producto</a></p>
+    <p>No hay proveedores. <a href="{{ url_for('nuevo_proveedor') }}">Cargar proveedor</a> primero.</p>
 </div>
 {% endif %}
 
+<style>
+.btn-toggle {
+    width: 28px; height: 28px; border: 1px solid #cbd5e0; background: white;
+    border-radius: 4px; cursor: pointer; font-weight: bold; color: #667eea;
+}
+.btn-toggle:hover { background: #edf2f7; }
+</style>
+
 <script>
+function toggleProductos(id) {
+    const fila = document.getElementById('detalle-' + id);
+    const btn = document.getElementById('btn-' + id);
+    if (!fila) return;
+    const visible = fila.style.display !== 'none';
+    fila.style.display = visible ? 'none' : 'table-row';
+    btn.textContent = visible ? '+' : '−';
+}
+
 document.getElementById('filtro')?.addEventListener('keyup', function() {
-    const filtro = this.value.toLowerCase();
-    const filas = document.querySelectorAll('.fila-datos');
-    filas.forEach(fila => {
-        const busqueda = fila.getAttribute('data-busqueda');
-        fila.style.display = busqueda.includes(filtro) ? '' : 'none';
+    const f = this.value.toLowerCase();
+    document.querySelectorAll('.fila-proveedor').forEach(fila => {
+        const ok = fila.getAttribute('data-busqueda').includes(f);
+        fila.style.display = ok ? '' : 'none';
+        const id = fila.querySelector('.btn-toggle')?.id?.replace('btn-', '');
+        if (id) {
+            const det = document.getElementById('detalle-' + id);
+            if (det && !ok) det.style.display = 'none';
+        }
     });
 });
-
-function eliminar(id, nombre) {
-    if (confirm(`¿Está seguro de que desea eliminar el producto "${nombre}"?`)) {
-        fetch(`/productos/${id}/eliminar`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'}
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + data.error);
-            }
-        })
-        .catch(e => alert('Error: ' + e));
-    }
-}
 </script>
 {% endblock %}

@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}Aging de Proveedores - ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aging_clientes.css') }}?v=20260529b">
+{% endblock %}
+
+{% block content %}
+{% set filas = filas_aging if filas_aging is defined else [] %}
+
+<div class="header">
+    <h2>Aging de Proveedores</h2>
+    <p style="margin:4px 0 0;color:#718096;font-size:14px;">Cuentas por pagar — agrupado por proveedor</p>
+</div>
+
+<div class="ac-totales">
+    <div><strong>Total ventas</strong><span class="val ac-v" id="totVtas">{{ total_vtas | moneda }}</span></div>
+    <div><strong>Total pagado</strong><span class="val ac-c" id="totPagado">{{ total_pagado | moneda }}</span></div>
+    <div><strong>Total deuda</strong><span class="val ac-d" id="totDeuda">{{ total_deuda | moneda }}</span></div>
+</div>
+
+{% if aging_json %}
+<script type="application/json" id="agingJson">{{ aging_json|safe }}</script>
+{% endif %}
+
+<div class="ac-wrap">
+<table class="ac-tabla" id="tablaAgingProv">
+    <thead>
+        <tr class="titulos">
+            <th class="sortable ac-g-azul" data-col="proveedor" data-type="text">Proveedor</th>
+            <th class="sortable ac-g-azul num" data-col="venta" data-type="num">Total venta</th>
+            <th class="sortable ac-g-azul" data-col="cliente" data-type="text">Cliente</th>
+            <th class="sortable ac-g-azul ac-g-costo-fin num" data-col="costo" data-type="num">Costo</th>
+            <th class="sortable ac-g-verde ac-g-cobrado num" data-col="pagado" data-type="num">Total pagado</th>
+            <th class="sortable ac-g-rojo num" data-col="deuda" data-type="num">Total deuda</th>
+            <th class="sortable ac-g-rojo ac-g-deuda-com num" data-col="deuda_costo" data-type="num">Deuda costo</th>
+            <th class="sortable ac-g-info ac-g-pct num" data-col="pct" data-type="num">% Pagado</th>
+            <th class="sortable ac-g-info" data-col="estado" data-type="text">Estado</th>
+        </tr>
+        <tr class="filtros">
+            <th class="ac-g-azul">
+                <select id="filtroProveedor" data-filter="proveedor">
+                    <option value="">Todos</option>
+                    {% for p in filas %}
+                    <option value="{{ p.proveedor_id }}">{{ p.proveedor }}</option>
+                    {% endfor %}
+                </select>
+            </th>
+            <th class="ac-g-azul"></th>
+            <th class="ac-g-azul"></th>
+            <th class="ac-g-azul ac-g-costo-fin"></th>
+            <th class="ac-g-verde ac-g-cobrado"></th>
+            <th class="ac-g-rojo">
+                <select data-filter="deuda">
+                    <option value="">Todos</option>
+                    <option value="deuda">Deuda</option>
+                    <option value="pago">Pago</option>
+                </select>
+            </th>
+            <th class="ac-g-rojo ac-g-deuda-com">
+                <select data-filter="deuda_costo">
+                    <option value="">Todos</option>
+                    <option value="deuda">Deuda</option>
+                    <option value="pago">Pago</option>
+                </select>
+            </th>
+            <th class="ac-g-info ac-g-pct"></th>
+            <th class="ac-g-info">
+                <select data-filter="estado">
+                    <option value="">Todos</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Completo">Completo</option>
+                </select>
+            </th>
+        </tr>
+    </thead>
+    <tbody id="cuerpoAging">
+        {% if filas %}
+        {% for pr in filas %}
+        <tr class="fila-proveedor fila-dato"
+            data-tipo="proveedor"
+            data-proveedor-id="{{ pr.proveedor_id }}"
+            data-proveedor-nombre="{{ pr.proveedor }}"
+            data-proveedor="{{ pr.proveedor|lower }}"
+            data-venta="{{ pr.venta }}"
+            data-cliente=""
+            data-costo="{{ pr.costo }}"
+            data-pagado="{{ pr.pagado }}"
+            data-deuda="{{ pr.total_deuda }}"
+            data-deuda_costo="{{ pr.deuda_costo }}"
+            data-pct="{{ pr.pct_pagado }}"
+            data-estado="{{ pr.estado }}">
+            <td class="td-cli ac-g-azul">
+                <button type="button" class="btn-expand" data-proveedor="{{ pr.proveedor_id }}" aria-label="Expandir">+</button>
+                {{ pr.proveedor }}
+                <span style="color:#718096;font-weight:400;font-size:11px;">({{ pr.num_pedidos }} ped.)</span>
+            </td>
+            <td class="num ac-g-azul">{{ pr.venta | moneda }}</td>
+            <td class="ac-g-azul"></td>
+            <td class="num ac-g-azul ac-g-costo-fin">{{ pr.costo | moneda }}</td>
+            <td class="num ac-g-verde ac-g-cobrado">{{ pr.pagado | moneda }}</td>
+            <td class="num ac-g-rojo">{{ pr.total_deuda | moneda }}</td>
+            <td class="num ac-g-rojo ac-g-deuda-com">{{ pr.deuda_costo | moneda }}</td>
+            <td class="num ac-g-info ac-g-pct{% if pr.estado != 'Completo' %} pct-pendiente{% endif %}">{{ pr.pct_pagado | formato_porcentaje }}%</td>
+            <td class="ac-g-info">
+                {% if pr.estado == 'Completo' %}
+                <span class="badge-ac-ok">Completo</span>
+                {% else %}
+                <span class="badge-ac-pend">Pendiente</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% for ped in pr.pedidos %}
+        <tr class="fila-pedido fila-dato hijo-{{ pr.proveedor_id }}"
+            data-tipo="pedido"
+            data-parent="{{ pr.proveedor_id }}"
+            data-proveedor="{{ pr.proveedor|lower }}"
+            data-cliente="{{ ped.cliente|lower }}"
+            data-venta="{{ ped.venta }}"
+            data-costo="{{ ped.costo }}"
+            data-pagado="{{ ped.pagado }}"
+            data-deuda="{{ ped.total_deuda }}"
+            data-deuda_costo="{{ ped.deuda_costo }}"
+            data-pct="{{ ped.pct_pagado }}"
+            data-estado="{{ ped.estado }}">
+            <td class="td-cli ac-g-azul">
+                <a href="{{ url_for('ver_pedido', id=ped.pedido_id) }}" target="_blank" rel="noopener" class="link-pedido">
+                    Pedido {{ ped.numero }}
+                </a>
+            </td>
+            <td class="num ac-g-azul">{{ ped.venta | moneda }}</td>
+            <td class="ac-g-azul">{{ ped.cliente }}</td>
+            <td class="num ac-g-azul ac-g-costo-fin">{{ ped.costo | moneda }}</td>
+            <td class="num ac-g-verde ac-g-cobrado">{{ ped.pagado | moneda }}</td>
+            <td class="num ac-g-rojo">{{ ped.total_deuda | moneda }}</td>
+            <td class="num ac-g-rojo ac-g-deuda-com">{{ ped.deuda_costo | moneda }}</td>
+            <td class="num ac-g-info ac-g-pct{% if ped.estado != 'Completo' %} pct-pendiente{% endif %}">{{ ped.pct_pagado | formato_porcentaje }}%</td>
+            <td class="ac-g-info">
+                {% if ped.estado == 'Completo' %}
+                <span class="badge-ac-ok">Completo</span>
+                {% else %}
+                <span class="badge-ac-pend">Pendiente</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+        {% else %}
+        <tr><td colspan="9" class="ac-vacio">Cargando…</td></tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const cuerpo = document.getElementById('cuerpoAging');
+    if (!cuerpo) return;
+    const fetchOpts = { credentials: 'same-origin', headers: { 'Accept': 'application/json' } };
+
+    const fmtMoney = n => (Number(n) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtPct = n => (Number(n) || 0).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+    const COLS = [
+        'ac-g-azul', 'ac-g-azul', 'ac-g-azul', 'ac-g-azul ac-g-costo-fin',
+        'ac-g-verde ac-g-cobrado', 'ac-g-rojo', 'ac-g-rojo ac-g-deuda-com',
+        'ac-g-info ac-g-pct', 'ac-g-info'
+    ];
+
+    function badgeEstado(est) {
+        return est === 'Completo'
+            ? '<span class="badge-ac-ok">Completo</span>'
+            : '<span class="badge-ac-pend">Pendiente</span>';
+    }
+    function clasePct(estado, pct) {
+        return (estado !== 'Completo' || (Number(pct) || 0) < 99.99) ? ' pct-pendiente' : '';
+    }
+
+    function aplicarEstilosColumnas() {
+        const tabla = document.getElementById('tablaAgingProv');
+        if (!tabla) return;
+        tabla.querySelectorAll('thead tr, tbody tr').forEach(tr => {
+            tr.querySelectorAll('th, td').forEach((celda, i) => {
+                if (i >= COLS.length) return;
+                COLS[i].split(' ').forEach(cl => celda.classList.add(cl));
+                if (i === 0 && tr.classList.contains('fila-pedido')) celda.classList.add('td-cli');
+                if (i > 0 && i < 8) celda.classList.add('num');
+            });
+        });
+        tabla.querySelectorAll('tbody tr').forEach(tr => {
+            const pct = tr.querySelector('td.ac-g-pct');
+            if (!pct) return;
+            if (tr.dataset.estado !== 'Completo' || (parseFloat(tr.dataset.pct) || 0) < 99.99) {
+                pct.classList.add('pct-pendiente');
+            }
+        });
+    }
+
+    async function fetchPedidosProveedor(id) {
+        const urls = [
+            '/api/aging/proveedor/' + id + '/pedidos',
+            '/api/proveedor/' + id + '/pedidos',
+        ];
+        for (const url of urls) {
+            const r = await fetch(url, fetchOpts);
+            if (!r.ok) continue;
+            const data = await r.json();
+            if (Array.isArray(data)) return data;
+            if (data.pedidos) return data.pedidos;
+        }
+        throw new Error('sin pedidos');
+    }
+
+    function filaPedidoHtml(pr, p) {
+        const url = '/pedidos/' + p.pedido_id;
+        return `<tr class="fila-pedido fila-dato hijo-${pr.proveedor_id}"
+            data-tipo="pedido" data-parent="${pr.proveedor_id}"
+            data-proveedor="${String(pr.proveedor).toLowerCase()}"
+            data-cliente="${String(p.cliente||'').toLowerCase()}"
+            data-venta="${p.venta}" data-costo="${p.costo}" data-pagado="${p.pagado}"
+            data-deuda="${p.total_deuda}" data-deuda_costo="${p.deuda_costo}"
+            data-pct="${p.pct_pagado}" data-estado="${p.estado}">
+            <td class="td-cli ac-g-azul"><a href="${url}" target="_blank" rel="noopener" class="link-pedido">Pedido ${p.numero}</a></td>
+            <td class="num ac-g-azul">${fmtMoney(p.venta)}</td>
+            <td class="ac-g-azul">${p.cliente || '—'}</td>
+            <td class="num ac-g-azul ac-g-costo-fin">${fmtMoney(p.costo)}</td>
+            <td class="num ac-g-verde ac-g-cobrado">${fmtMoney(p.pagado)}</td>
+            <td class="num ac-g-rojo">${fmtMoney(p.total_deuda)}</td>
+            <td class="num ac-g-rojo ac-g-deuda-com">${fmtMoney(p.deuda_costo)}</td>
+            <td class="num ac-g-info ac-g-pct${clasePct(p.estado, p.pct_pagado)}">${fmtPct(p.pct_pagado)}%</td>
+            <td class="ac-g-info">${badgeEstado(p.estado)}</td>
+        </tr>`;
+    }
+
+    function filaProveedorHtml(pr) {
+        return `<tr class="fila-proveedor fila-dato"
+            data-tipo="proveedor" data-proveedor-id="${pr.proveedor_id}"
+            data-proveedor-nombre="${pr.proveedor}"
+            data-proveedor="${String(pr.proveedor).toLowerCase()}"
+            data-venta="${pr.venta}" data-cliente="" data-costo="${pr.costo}"
+            data-pagado="${pr.pagado}" data-deuda="${pr.total_deuda}"
+            data-deuda_costo="${pr.deuda_costo}" data-pct="${pr.pct_pagado}" data-estado="${pr.estado}">
+            <td class="td-cli ac-g-azul"><button type="button" class="btn-expand" data-proveedor="${pr.proveedor_id}">+</button>
+                ${pr.proveedor} <span style="color:#718096;font-weight:400;font-size:11px;">(${pr.num_pedidos} ped.)</span></td>
+            <td class="num ac-g-azul">${fmtMoney(pr.venta)}</td><td class="ac-g-azul"></td>
+            <td class="num ac-g-azul ac-g-costo-fin">${fmtMoney(pr.costo)}</td>
+            <td class="num ac-g-verde ac-g-cobrado">${fmtMoney(pr.pagado)}</td>
+            <td class="num ac-g-rojo">${fmtMoney(pr.total_deuda)}</td>
+            <td class="num ac-g-rojo ac-g-deuda-com">${fmtMoney(pr.deuda_costo)}</td>
+            <td class="num ac-g-info ac-g-pct${clasePct(pr.estado, pr.pct_pagado)}">${fmtPct(pr.pct_pagado)}%</td>
+            <td class="ac-g-info">${badgeEstado(pr.estado)}</td>
+        </tr>`;
+    }
+
+    function renderTabla(filas) {
+        let html = '';
+        (filas || []).forEach(pr => {
+            html += filaProveedorHtml(pr);
+            (pr.pedidos || []).forEach(p => { html += filaPedidoHtml(pr, p); });
+        });
+        cuerpo.innerHTML = html || '<tr><td colspan="9" class="ac-vacio">No hay proveedores con pedidos activos.</td></tr>';
+        repoblarFiltroProveedores();
+        aplicarEstilosColumnas();
+    }
+
+    function repoblarFiltroProveedores() {
+        const sel = document.getElementById('filtroProveedor');
+        if (!sel) return;
+        const prev = sel.value;
+        const opts = ['<option value="">Todos</option>'];
+        const vistos = new Set();
+        document.querySelectorAll('.fila-proveedor').forEach(r => {
+            const id = r.dataset.proveedorId;
+            if (!id || vistos.has(id)) return;
+            vistos.add(id);
+            const nombre = r.getAttribute('data-proveedor-nombre') || r.dataset.proveedor || id;
+            opts.push(`<option value="${id}">${nombre}</option>`);
+        });
+        sel.innerHTML = opts.join('');
+        if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+    }
+
+    function bindExpandButtons() {
+        document.querySelectorAll('.btn-expand').forEach(btn => {
+            if (btn.dataset.bound) return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', async function() {
+                const id = this.dataset.proveedor;
+                let hijos = cuerpo.querySelectorAll('.hijo-' + id);
+                if (hijos.length === 0) {
+                    this.disabled = true;
+                    try {
+                        const pedidos = await fetchPedidosProveedor(id);
+                        const filaPr = cuerpo.querySelector('.fila-proveedor[data-proveedor-id="' + id + '"]');
+                        const pr = {
+                            proveedor_id: id,
+                            proveedor: filaPr ? filaPr.getAttribute('data-proveedor-nombre') : ''
+                        };
+                        let html = '';
+                        pedidos.forEach(p => { html += filaPedidoHtml(pr, p); });
+                        if (filaPr) filaPr.insertAdjacentHTML('afterend', html);
+                        aplicarEstilosColumnas();
+                        hijos = cuerpo.querySelectorAll('.hijo-' + id);
+                    } catch (e) {
+                        alert('No se pudieron cargar los pedidos.');
+                        this.disabled = false;
+                        return;
+                    }
+                    this.disabled = false;
+                }
+                const abierto = this.textContent.trim() === '−';
+                const filaPr = cuerpo.querySelector('.fila-proveedor[data-proveedor-id="' + id + '"]');
+                if (filaPr) {
+                    if (abierto) filaPr.classList.remove('expandida');
+                    else filaPr.classList.add('expandida');
+                }
+                hijos.forEach(tr => {
+                    if (tr.style.display === 'none') return;
+                    if (abierto) tr.classList.remove('visible');
+                    else tr.classList.add('visible');
+                });
+                this.textContent = abierto ? '+' : '−';
+            });
+        });
+    }
+
+    function cumpleFiltroDeuda(valor, filtro) {
+        if (!filtro) return true;
+        const n = parseFloat(valor) || 0;
+        if (filtro === 'deuda') return n > 0.01;
+        if (filtro === 'pago') return n <= 0.01;
+        return true;
+    }
+    function filaCoincide(row, filtros) {
+        if (filtros.proveedor) {
+            const pid = row.dataset.proveedorId || row.dataset.parent;
+            if (String(pid) !== String(filtros.proveedor)) return false;
+        }
+        if (!cumpleFiltroDeuda(row.dataset.deuda, filtros.deuda)) return false;
+        if (!cumpleFiltroDeuda(row.dataset.deuda_costo, filtros.deuda_costo)) return false;
+        if (filtros.estado && row.dataset.estado !== filtros.estado) return false;
+        return true;
+    }
+    function leerFiltros() {
+        const filtros = {};
+        document.querySelectorAll('#tablaAgingProv [data-filter]').forEach(el => {
+            filtros[el.dataset.filter] = (el.value || '').trim();
+            if (el.dataset.filter !== 'proveedor' && el.dataset.filter !== 'estado') {
+                filtros[el.dataset.filter] = filtros[el.dataset.filter].toLowerCase();
+            }
+        });
+        return filtros;
+    }
+    function aplicarFiltros() {
+        const filtros = leerFiltros();
+        const activo = !!(filtros.proveedor || filtros.deuda || filtros.deuda_costo || filtros.estado);
+        document.querySelectorAll('.fila-proveedor').forEach(filaPr => {
+            const pid = filaPr.dataset.proveedorId;
+            const hijos = cuerpo.querySelectorAll('.hijo-' + pid);
+            let hijoVisible = false;
+            hijos.forEach(h => {
+                const ok = !activo || filaCoincide(h, filtros);
+                h.style.display = ok ? '' : 'none';
+                if (ok) hijoVisible = true;
+                if (!ok) h.classList.remove('visible');
+            });
+            const okPr = !activo || filaCoincide(filaPr, filtros) || hijoVisible;
+            filaPr.style.display = okPr ? '' : 'none';
+        });
+    }
+
+    function bindFiltrosSort() {
+        document.querySelectorAll('#tablaAgingProv [data-filter]').forEach(el => {
+            if (el.dataset.fBound) return;
+            el.dataset.fBound = '1';
+            el.addEventListener('input', aplicarFiltros);
+            el.addEventListener('change', aplicarFiltros);
+        });
+        let sortCol = null, sortDir = 1;
+        const sortKey = {
+            proveedor: 'proveedor', venta: 'venta', cliente: 'cliente', costo: 'costo',
+            pagado: 'pagado', deuda: 'deuda', deuda_costo: 'deuda_costo', pct: 'pct', estado: 'estado'
+        };
+        document.querySelectorAll('#tablaAgingProv th.sortable').forEach(th => {
+            if (th.dataset.sBound) return;
+            th.dataset.sBound = '1';
+            th.addEventListener('click', () => {
+                const col = th.dataset.col;
+                const type = th.dataset.type;
+                if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
+                const key = sortKey[col] || col;
+                const filasPr = [...document.querySelectorAll('.fila-proveedor')];
+                filasPr.sort((a, b) => {
+                    let va = a.dataset[key] || '', vb = b.dataset[key] || '';
+                    if (type === 'num') return ((parseFloat(va) || 0) - (parseFloat(vb) || 0)) * sortDir;
+                    return String(va).localeCompare(String(vb), 'es') * sortDir;
+                });
+                filasPr.forEach(pr => {
+                    const id = pr.dataset.proveedorId;
+                    cuerpo.appendChild(pr);
+                    cuerpo.querySelectorAll('.hijo-' + id).forEach(h => cuerpo.appendChild(h));
+                });
+            });
+        });
+    }
+
+    async function cargarDesdeApi() {
+        try {
+            const r = await fetch('/api/aging/proveedores', fetchOpts);
+            if (!r.ok) return false;
+            const data = await r.json();
+            renderTabla(data.filas);
+            if (data.total_vtas != null) {
+                const elV = document.getElementById('totVtas');
+                const elP = document.getElementById('totPagado');
+                const elD = document.getElementById('totDeuda');
+                if (elV) elV.textContent = fmtMoney(data.total_vtas);
+                if (elP) elP.textContent = fmtMoney(data.total_pagado);
+                if (elD) elD.textContent = fmtMoney(data.total_deuda);
+            }
+            return true;
+        } catch (e) { return false; }
+    }
+
+    function loadEmbedded() {
+        const el = document.getElementById('agingJson');
+        if (!el || !el.textContent.trim()) return false;
+        try {
+            const data = JSON.parse(el.textContent);
+            if (data.filas && data.filas.length) {
+                renderTabla(data.filas);
+                if (data.total_vtas != null) {
+                    document.getElementById('totVtas').textContent = fmtMoney(data.total_vtas);
+                    document.getElementById('totPagado').textContent = fmtMoney(data.total_pagado);
+                    document.getElementById('totDeuda').textContent = fmtMoney(data.total_deuda);
+                }
+                return true;
+            }
+        } catch (e) {}
+        return false;
+    }
+
+    async function init() {
+        if (!loadEmbedded()) {
+            const ok = await cargarDesdeApi();
+            if (!ok) cuerpo.innerHTML = '<tr><td colspan="9" class="ac-vacio">No se pudieron cargar los datos.</td></tr>';
+        } else {
+            repoblarFiltroProveedores();
+        }
+        aplicarEstilosColumnas();
+        bindExpandButtons();
+        bindFiltrosSort();
+    }
+    init();
+})();
+</script>
+{% endblock %}

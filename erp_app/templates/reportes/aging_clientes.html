@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+
+{% block title %}Aging de Clientes - ERP{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aging_clientes.css') }}?v=20260529b">
+{% endblock %}
+
+{% block content %}
+{% set total_deuda = total_deuda|default(total_saldo|default(0)) %}
+{% set filas = filas_aging if filas_aging is defined else (clientes if clientes is defined else []) %}
+
+<div class="header">
+    <h2>Aging de Clientes</h2>
+    <p style="margin:4px 0 0;color:#718096;font-size:14px;">Cuentas por cobrar — agrupado por cliente</p>
+</div>
+
+<div class="ac-totales">
+    <div><strong>Total ventas</strong><span class="val ac-v" id="totVtas">{{ total_vtas | moneda }}</span></div>
+    <div><strong>Total cobrado</strong><span class="val ac-c" id="totCobrado">{{ total_cobrado | moneda }}</span></div>
+    <div><strong>Total deuda</strong><span class="val ac-d" id="totDeuda">{{ total_deuda | moneda }}</span></div>
+</div>
+
+{% if aging_json %}
+<script type="application/json" id="agingJson">{{ aging_json|safe }}</script>
+{% endif %}
+
+<div class="ac-wrap">
+<table class="ac-tabla" id="tablaAging">
+    <thead>
+        <tr class="titulos">
+            <th class="sortable ac-g-azul" data-col="cliente" data-type="text">Cliente</th>
+            <th class="sortable ac-g-azul num" data-col="venta" data-type="num">Total venta</th>
+            <th class="sortable ac-g-azul" data-col="proveedor" data-type="text">Proveedor</th>
+            <th class="sortable ac-g-azul num" data-col="costo" data-type="num">Costo</th>
+            <th class="sortable ac-g-azul ac-g-comision num" data-col="comision" data-type="num">Comisión</th>
+            <th class="sortable ac-g-verde ac-g-cobrado num" data-col="cobrado" data-type="num">Total cobrado</th>
+            <th class="sortable ac-g-rojo num" data-col="deuda" data-type="num">Total deuda</th>
+            <th class="sortable ac-g-rojo num" data-col="deuda_costo" data-type="num">Deuda costo</th>
+            <th class="sortable ac-g-rojo ac-g-deuda-com num" data-col="deuda_com" data-type="num">Deuda comisión</th>
+            <th class="sortable ac-g-info ac-g-pct num" data-col="pct" data-type="num">% Pagado</th>
+            <th class="sortable ac-g-info" data-col="estado" data-type="text">Estado</th>
+        </tr>
+        <tr class="filtros">
+            <th class="ac-g-azul">
+                <select id="filtroCliente" data-filter="cliente">
+                    <option value="">Todos</option>
+                    {% for c in filas %}
+                    <option value="{{ c.cliente_id }}">{{ c.cliente }}</option>
+                    {% endfor %}
+                </select>
+            </th>
+            <th class="ac-g-azul"></th>
+            <th class="ac-g-azul"></th>
+            <th class="ac-g-azul"></th>
+            <th class="ac-g-azul ac-g-comision"></th>
+            <th class="ac-g-verde ac-g-cobrado"></th>
+            <th class="ac-g-rojo">
+                <select data-filter="deuda">
+                    <option value="">Todos</option>
+                    <option value="deuda">Deuda</option>
+                    <option value="pago">Pago</option>
+                </select>
+            </th>
+            <th class="ac-g-rojo">
+                <select data-filter="deuda_costo">
+                    <option value="">Todos</option>
+                    <option value="deuda">Deuda</option>
+                    <option value="pago">Pago</option>
+                </select>
+            </th>
+            <th class="ac-g-rojo ac-g-deuda-com">
+                <select data-filter="deuda_com">
+                    <option value="">Todos</option>
+                    <option value="deuda">Deuda</option>
+                    <option value="pago">Pago</option>
+                </select>
+            </th>
+            <th class="ac-g-info ac-g-pct"></th>
+            <th class="ac-g-info">
+                <select data-filter="estado">
+                    <option value="">Todos</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Completo">Completo</option>
+                </select>
+            </th>
+        </tr>
+    </thead>
+    <tbody id="cuerpoAging">
+        {% if filas %}
+        {% for c in filas %}
+        <tr class="fila-cliente fila-dato"
+            data-tipo="cliente"
+            data-cliente-id="{{ c.cliente_id }}"
+            data-cliente-nombre="{{ c.cliente }}"
+            data-cliente="{{ c.cliente|lower }}"
+            data-venta="{{ c.venta }}"
+            data-proveedor=""
+            data-costo="{{ c.costo }}"
+            data-comision="{{ c.comision }}"
+            data-cobrado="{{ c.cobrado }}"
+            data-deuda="{{ c.total_deuda }}"
+            data-deuda_costo="{{ c.deuda_costo }}"
+            data-deuda_com="{{ c.deuda_comision }}"
+            data-pct="{{ c.pct_pagado }}"
+            data-estado="{{ c.estado }}">
+            <td class="td-cli ac-g-azul">
+                <button type="button" class="btn-expand" data-cliente="{{ c.cliente_id }}" aria-label="Expandir">+</button>
+                {{ c.cliente }}
+                <span style="color:#718096;font-weight:400;font-size:11px;">({{ c.num_pedidos }} ped.)</span>
+            </td>
+            <td class="num ac-g-azul">{{ c.venta | moneda }}</td>
+            <td class="ac-g-azul"></td>
+            <td class="num ac-g-azul">{{ c.costo | moneda }}</td>
+            <td class="num ac-g-azul ac-g-comision">{{ c.comision | moneda }}</td>
+            <td class="num ac-g-verde ac-g-cobrado">{{ c.cobrado | moneda }}</td>
+            <td class="num ac-g-rojo">{{ c.total_deuda | moneda }}</td>
+            <td class="num ac-g-rojo">{{ c.deuda_costo | moneda }}</td>
+            <td class="num ac-g-rojo ac-g-deuda-com">{{ c.deuda_comision | moneda }}</td>
+            <td class="num ac-g-info ac-g-pct{% if c.estado != 'Completo' %} pct-pendiente{% endif %}">{{ c.pct_pagado | formato_porcentaje }}%</td>
+            <td class="ac-g-info">
+                {% if c.estado == 'Completo' %}
+                <span class="badge-ac-ok">Completo</span>
+                {% else %}
+                <span class="badge-ac-pend">Pendiente</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% for p in c.pedidos %}
+        <tr class="fila-pedido fila-dato hijo-{{ c.cliente_id }}"
+            data-tipo="pedido"
+            data-parent="{{ c.cliente_id }}"
+            data-cliente="{{ p.numero|lower }} {{ c.cliente|lower }}"
+            data-venta="{{ p.venta }}"
+            data-proveedor="{{ p.proveedor|lower }}"
+            data-costo="{{ p.costo }}"
+            data-comision="{{ p.comision }}"
+            data-cobrado="{{ p.cobrado }}"
+            data-deuda="{{ p.total_deuda }}"
+            data-deuda_costo="{{ p.deuda_costo }}"
+            data-deuda_com="{{ p.deuda_comision }}"
+            data-pct="{{ p.pct_pagado }}"
+            data-estado="{{ p.estado }}">
+            <td class="td-cli ac-g-azul">
+                <a href="{{ url_for('ver_pedido', id=p.pedido_id) }}" target="_blank" rel="noopener" class="link-pedido">
+                    Pedido {{ p.numero }}
+                </a>
+            </td>
+            <td class="num ac-g-azul">{{ p.venta | moneda }}</td>
+            <td class="ac-g-azul">{{ p.proveedor }}</td>
+            <td class="num ac-g-azul">{{ p.costo | moneda }}</td>
+            <td class="num ac-g-azul ac-g-comision">{{ p.comision | moneda }}</td>
+            <td class="num ac-g-verde ac-g-cobrado">{{ p.cobrado | moneda }}</td>
+            <td class="num ac-g-rojo">{{ p.total_deuda | moneda }}</td>
+            <td class="num ac-g-rojo">{{ p.deuda_costo | moneda }}</td>
+            <td class="num ac-g-rojo ac-g-deuda-com">{{ p.deuda_comision | moneda }}</td>
+            <td class="num ac-g-info ac-g-pct{% if p.estado != 'Completo' %} pct-pendiente{% endif %}">{{ p.pct_pagado | formato_porcentaje }}%</td>
+            <td class="ac-g-info">
+                {% if p.estado == 'Completo' %}
+                <span class="badge-ac-ok">Completo</span>
+                {% else %}
+                <span class="badge-ac-pend">Pendiente</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+        {% else %}
+        <tr><td colspan="11" class="ac-vacio">Cargando…</td></tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const cuerpo = document.getElementById('cuerpoAging');
+    if (!cuerpo) return;
+
+    const fetchOpts = { credentials: 'same-origin', headers: { 'Accept': 'application/json' } };
+
+    const fmtMoney = n => {
+        const x = Number(n) || 0;
+        return x.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+    const fmtPct = n => (Number(n) || 0).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+    function badgeEstado(est) {
+        return est === 'Completo'
+            ? '<span class="badge-ac-ok">Completo</span>'
+            : '<span class="badge-ac-pend">Pendiente</span>';
+    }
+
+    function clasePct(estado, pct) {
+        return (estado !== 'Completo' || (Number(pct) || 0) < 99.99) ? ' pct-pendiente' : '';
+    }
+
+    const COLS_AGING = [
+        'ac-g-azul', 'ac-g-azul', 'ac-g-azul', 'ac-g-azul', 'ac-g-azul ac-g-comision',
+        'ac-g-verde ac-g-cobrado', 'ac-g-rojo', 'ac-g-rojo', 'ac-g-rojo ac-g-deuda-com',
+        'ac-g-info ac-g-pct', 'ac-g-info'
+    ];
+
+    function aplicarEstilosColumnas() {
+        const tabla = document.getElementById('tablaAging');
+        if (!tabla) return;
+        tabla.querySelectorAll('thead tr, tbody tr').forEach(tr => {
+            const celdas = tr.querySelectorAll('th, td');
+            celdas.forEach((celda, i) => {
+                if (i >= COLS_AGING.length) return;
+                COLS_AGING[i].split(' ').forEach(cl => celda.classList.add(cl));
+                if (i === 0 && tr.classList.contains('fila-pedido')) celda.classList.add('td-cli');
+                if (i > 0 && i < 10) celda.classList.add('num');
+            });
+        });
+        tabla.querySelectorAll('tbody tr').forEach(tr => {
+            const pct = tr.querySelector('td.ac-g-pct');
+            if (!pct) return;
+            const est = tr.dataset.estado;
+            const val = parseFloat(tr.dataset.pct) || 0;
+            if (est !== 'Completo' || val < 99.99) pct.classList.add('pct-pendiente');
+        });
+    }
+
+    function mapPedidoLegacy(p) {
+        const venta = Number(p.valor ?? p.venta) || 0;
+        const cobrado = Number(p.cobrado) || 0;
+        return {
+            pedido_id: p.id ?? p.pedido_id,
+            numero: p.numero,
+            venta, cobrado,
+            total_deuda: Number(p.saldo ?? p.total_deuda) || Math.max(0, venta - cobrado),
+            costo: Number(p.costo) || 0,
+            comision: Number(p.comision) || 0,
+            deuda_costo: Number(p.deuda_costo) || 0,
+            deuda_comision: Number(p.deuda_comision) || 0,
+            proveedor: p.proveedor || '—',
+            pct_pagado: venta > 0 ? (cobrado / venta * 100) : 0,
+            estado: (p.estado === 'Pagado' || p.estado === 'Completo') ? 'Completo' : 'Pendiente',
+        };
+    }
+
+    async function fetchPedidosCliente(id) {
+        const urls = [
+            '/api/aging/cliente/' + id + '/pedidos',
+            '/api/cliente/' + id + '/pedidos',
+        ];
+        for (const url of urls) {
+            const r = await fetch(url, fetchOpts);
+            if (!r.ok) continue;
+            const data = await r.json();
+            if (Array.isArray(data)) return data;
+            if (data.pedidos) {
+                return data.pedidos.map(p => (p.pedido_id ? p : mapPedidoLegacy(p)));
+            }
+        }
+        throw new Error('sin pedidos');
+    }
+
+    function filaPedidoHtml(c, p) {
+        const url = '/pedidos/' + p.pedido_id;
+        const nomCli = (c.cliente && !String(c.cliente).match(/^\d/)) ? c.cliente : (c.nombre || '');
+        return `<tr class="fila-pedido fila-dato hijo-${c.cliente_id}"
+            data-tipo="pedido" data-parent="${c.cliente_id}"
+            data-cliente="${String(p.numero).toLowerCase()} ${String(nomCli).toLowerCase()}"
+            data-venta="${p.venta}" data-proveedor="${String(p.proveedor||'').toLowerCase()}"
+            data-costo="${p.costo}" data-comision="${p.comision}" data-cobrado="${p.cobrado}"
+            data-deuda="${p.total_deuda}" data-deuda_costo="${p.deuda_costo}"
+            data-deuda_com="${p.deuda_comision}" data-pct="${p.pct_pagado}" data-estado="${p.estado}">
+            <td class="td-cli ac-g-azul"><a href="${url}" target="_blank" rel="noopener" class="link-pedido">Pedido ${p.numero}</a></td>
+            <td class="num ac-g-azul">${fmtMoney(p.venta)}</td>
+            <td class="ac-g-azul">${p.proveedor || '—'}</td>
+            <td class="num ac-g-azul">${fmtMoney(p.costo)}</td>
+            <td class="num ac-g-azul ac-g-comision">${fmtMoney(p.comision)}</td>
+            <td class="num ac-g-verde ac-g-cobrado">${fmtMoney(p.cobrado)}</td>
+            <td class="num ac-g-rojo">${fmtMoney(p.total_deuda)}</td>
+            <td class="num ac-g-rojo">${fmtMoney(p.deuda_costo)}</td>
+            <td class="num ac-g-rojo ac-g-deuda-com">${fmtMoney(p.deuda_comision)}</td>
+            <td class="num ac-g-info ac-g-pct${clasePct(p.estado, p.pct_pagado)}">${fmtPct(p.pct_pagado)}%</td>
+            <td class="ac-g-info">${badgeEstado(p.estado)}</td>
+        </tr>`;
+    }
+
+    function filaClienteHtml(c) {
+        return `<tr class="fila-cliente fila-dato"
+            data-tipo="cliente" data-cliente-id="${c.cliente_id}"
+            data-cliente-nombre="${c.cliente}"
+            data-cliente="${String(c.cliente).toLowerCase()}" data-venta="${c.venta}"
+            data-proveedor="" data-costo="${c.costo}" data-comision="${c.comision}"
+            data-cobrado="${c.cobrado}" data-deuda="${c.total_deuda}"
+            data-deuda_costo="${c.deuda_costo}" data-deuda_com="${c.deuda_comision}"
+            data-pct="${c.pct_pagado}" data-estado="${c.estado}">
+            <td class="td-cli ac-g-azul"><button type="button" class="btn-expand" data-cliente="${c.cliente_id}" aria-label="Expandir">+</button>
+                ${c.cliente} <span style="color:#718096;font-weight:400;font-size:11px;">(${c.num_pedidos} ped.)</span></td>
+            <td class="num ac-g-azul">${fmtMoney(c.venta)}</td><td class="ac-g-azul"></td>
+            <td class="num ac-g-azul">${fmtMoney(c.costo)}</td>
+            <td class="num ac-g-azul ac-g-comision">${fmtMoney(c.comision)}</td>
+            <td class="num ac-g-verde ac-g-cobrado">${fmtMoney(c.cobrado)}</td>
+            <td class="num ac-g-rojo">${fmtMoney(c.total_deuda)}</td>
+            <td class="num ac-g-rojo">${fmtMoney(c.deuda_costo)}</td>
+            <td class="num ac-g-rojo ac-g-deuda-com">${fmtMoney(c.deuda_comision)}</td>
+            <td class="num ac-g-info ac-g-pct${clasePct(c.estado, c.pct_pagado)}">${fmtPct(c.pct_pagado)}%</td>
+            <td class="ac-g-info">${badgeEstado(c.estado)}</td>
+        </tr>`;
+    }
+
+    function renderTabla(filas) {
+        let html = '';
+        (filas || []).forEach(c => {
+            html += filaClienteHtml(c);
+            (c.pedidos || []).forEach(p => { html += filaPedidoHtml(c, p); });
+        });
+        cuerpo.innerHTML = html || '<tr><td colspan="11" class="ac-vacio">No hay clientes con pedidos activos.</td></tr>';
+        repoblarFiltroClientes();
+        aplicarEstilosColumnas();
+    }
+
+    function bindExpandButtons() {
+        document.querySelectorAll('.btn-expand').forEach(btn => {
+            if (btn.dataset.bound) return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', async function() {
+                const id = this.dataset.cliente;
+                let hijos = cuerpo.querySelectorAll('.hijo-' + id);
+                if (hijos.length === 0) {
+                    this.disabled = true;
+                    try {
+                        const pedidos = await fetchPedidosCliente(id);
+                        const filaCli = cuerpo.querySelector('.fila-cliente[data-cliente-id="' + id + '"]');
+                        const c = { cliente_id: id, cliente: filaCli ? (filaCli.cells[0]?.innerText || '').replace(/[+\-]/g,'').trim() : '' };
+                        let html = '';
+                        pedidos.forEach(p => { html += filaPedidoHtml(c, p); });
+                        if (filaCli) filaCli.insertAdjacentHTML('afterend', html);
+                        aplicarEstilosColumnas();
+                        hijos = cuerpo.querySelectorAll('.hijo-' + id);
+                    } catch (e) {
+                        alert('No se pudieron cargar los pedidos. Reiniciá python run.py y Ctrl+F5.');
+                        this.disabled = false;
+                        return;
+                    }
+                    this.disabled = false;
+                }
+                const abierto = this.textContent.trim() === '−';
+                const filaCli = cuerpo.querySelector('.fila-cliente[data-cliente-id="' + id + '"]');
+                if (filaCli) {
+                    if (abierto) filaCli.classList.remove('expandida');
+                    else filaCli.classList.add('expandida');
+                }
+                hijos.forEach(tr => {
+                    if (tr.style.display === 'none') return;
+                    if (abierto) tr.classList.remove('visible');
+                    else tr.classList.add('visible');
+                });
+                this.textContent = abierto ? '+' : '−';
+            });
+        });
+    }
+
+    async function cargarDesdeApi() {
+        try {
+            const r = await fetch('/api/aging/clientes', fetchOpts);
+            if (!r.ok) return false;
+            const data = await r.json();
+            renderTabla(data.filas);
+            if (data.total_vtas != null) {
+                const elV = document.getElementById('totVtas');
+                const elC = document.getElementById('totCobrado');
+                const elD = document.getElementById('totDeuda');
+                if (elV) elV.textContent = fmtMoney(data.total_vtas);
+                if (elC) elC.textContent = fmtMoney(data.total_cobrado);
+                if (elD) elD.textContent = fmtMoney(data.total_deuda);
+            }
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function cumpleFiltroDeuda(valor, filtro) {
+        if (!filtro) return true;
+        const n = parseFloat(valor) || 0;
+        if (filtro === 'deuda') return n > 0.01;
+        if (filtro === 'pago') return n <= 0.01;
+        return true;
+    }
+
+    function filaCoincide(row, filtros) {
+        if (filtros.cliente) {
+            const cid = row.dataset.clienteId || row.dataset.parent;
+            if (String(cid) !== String(filtros.cliente)) return false;
+        }
+        if (!cumpleFiltroDeuda(row.dataset.deuda, filtros.deuda)) return false;
+        if (!cumpleFiltroDeuda(row.dataset.deuda_costo, filtros.deuda_costo)) return false;
+        if (!cumpleFiltroDeuda(row.dataset.deuda_com, filtros.deuda_com)) return false;
+        if (filtros.estado && (row.dataset.estado || '') !== filtros.estado) return false;
+        return true;
+    }
+
+    function leerFiltros() {
+        const filtros = {};
+        document.querySelectorAll('#tablaAging [data-filter]').forEach(el => {
+            let v = (el.value || '').trim();
+            if (el.dataset.filter === 'estado') v = v; /* mantiene mayúsculas Pendiente/Completo */
+            else if (el.dataset.filter !== 'cliente') v = v.toLowerCase();
+            filtros[el.dataset.filter] = v;
+        });
+        return filtros;
+    }
+
+    function hayFiltrosActivos(filtros) {
+        return !!(filtros.cliente || filtros.deuda || filtros.deuda_costo || filtros.deuda_com || filtros.estado);
+    }
+
+    function repoblarFiltroClientes() {
+        const sel = document.getElementById('filtroCliente');
+        if (!sel) return;
+        const prev = sel.value;
+        const opts = ['<option value="">Todos</option>'];
+        const vistos = new Set();
+        document.querySelectorAll('.fila-cliente').forEach(r => {
+            const id = r.dataset.clienteId;
+            if (!id || vistos.has(id)) return;
+            vistos.add(id);
+            const nombre = r.getAttribute('data-cliente-nombre') || r.dataset.cliente || id;
+            opts.push(`<option value="${id}">${nombre}</option>`);
+        });
+        sel.innerHTML = opts.join('');
+        if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+    }
+
+    function aplicarFiltros() {
+        const filtros = leerFiltros();
+        const activo = hayFiltrosActivos(filtros);
+        document.querySelectorAll('.fila-cliente').forEach(filaCli => {
+            const cid = filaCli.dataset.clienteId;
+            const hijos = cuerpo.querySelectorAll('.hijo-' + cid);
+            let hijoVisible = false;
+            hijos.forEach(h => {
+                const ok = !activo || filaCoincide(h, filtros);
+                h.style.display = ok ? '' : 'none';
+                if (ok) hijoVisible = true;
+                if (!ok) h.classList.remove('visible');
+            });
+            const okCli = !activo || filaCoincide(filaCli, filtros) || hijoVisible;
+            filaCli.style.display = okCli ? '' : 'none';
+        });
+    }
+
+    function bindFiltrosSort() {
+        document.querySelectorAll('#tablaAging [data-filter]').forEach(el => {
+            if (el.dataset.fBound) return;
+            el.dataset.fBound = '1';
+            el.addEventListener('input', aplicarFiltros);
+            el.addEventListener('change', aplicarFiltros);
+        });
+        const sortKey = {
+            cliente: 'cliente', venta: 'venta', proveedor: 'proveedor', costo: 'costo',
+            comision: 'comision', cobrado: 'cobrado', deuda: 'deuda',
+            deuda_costo: 'deuda_costo', deuda_com: 'deuda_com', pct: 'pct', estado: 'estado'
+        };
+        let sortCol = null, sortDir = 1;
+        document.querySelectorAll('#tablaAging th.sortable').forEach(th => {
+            if (th.dataset.sBound) return;
+            th.dataset.sBound = '1';
+            th.addEventListener('click', () => {
+                const col = th.dataset.col;
+                const type = th.dataset.type;
+                if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
+                const key = sortKey[col] || col;
+                const clientes = [...document.querySelectorAll('.fila-cliente')];
+                clientes.sort((a, b) => {
+                    let va = a.dataset[key] || '', vb = b.dataset[key] || '';
+                    if (type === 'num') {
+                        va = parseFloat(va) || 0; vb = parseFloat(vb) || 0;
+                        return (va - vb) * sortDir;
+                    }
+                    return String(va).localeCompare(String(vb), 'es') * sortDir;
+                });
+                clientes.forEach(cli => {
+                    const id = cli.dataset.clienteId;
+                    cuerpo.appendChild(cli);
+                    cuerpo.querySelectorAll('.hijo-' + id).forEach(h => cuerpo.appendChild(h));
+                });
+            });
+        });
+    }
+
+    function loadEmbedded() {
+        const el = document.getElementById('agingJson');
+        if (!el || !el.textContent.trim()) return false;
+        try {
+            const data = JSON.parse(el.textContent);
+            if (data.filas && data.filas.length) {
+                renderTabla(data.filas);
+                if (data.total_vtas != null) {
+                    const elV = document.getElementById('totVtas');
+                    const elC = document.getElementById('totCobrado');
+                    const elD = document.getElementById('totDeuda');
+                    if (elV) elV.textContent = fmtMoney(data.total_vtas);
+                    if (elC) elC.textContent = fmtMoney(data.total_cobrado);
+                    if (elD) elD.textContent = fmtMoney(data.total_deuda);
+                }
+                repoblarFiltroClientes();
+                return true;
+            }
+        } catch (e) { console.error('agingJson', e); }
+        return false;
+    }
+
+    async function init() {
+        if (!loadEmbedded()) {
+            const ok = await cargarDesdeApi();
+            if (!ok) {
+                cuerpo.innerHTML = '<tr><td colspan="11" class="ac-vacio">No se pudieron cargar los datos.</td></tr>';
+            }
+        } else {
+            repoblarFiltroClientes();
+        }
+        aplicarEstilosColumnas();
+        bindExpandButtons();
+        bindFiltrosSort();
+    }
+    init();
+})();
+</script>
+{% endblock %}

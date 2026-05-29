@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Productos — {{ proveedor.nombre }}{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>Productos — {{ proveedor.nombre }}</h2>
+    <a href="{{ url_for('listar_productos') }}" class="btn btn-secondary">Volver al listado</a>
+</div>
+
+{% if error %}
+<div style="background: #fed7d7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">{{ error }}</div>
+{% endif %}
+
+<div style="background: #f7fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <strong>Proveedor:</strong> {{ proveedor.nombre }}
+    {% if proveedor.cuit %} | <strong>CUIT:</strong> {{ proveedor.cuit }}{% endif %}
+    {% if proveedor.telefono %} | <strong>Tel:</strong> {{ proveedor.telefono }}{% endif %}
+</div>
+
+<form method="POST" id="formProductos">
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow-x: auto;">
+        <table style="width: 100%; min-width: 900px; box-shadow: none;">
+            <thead>
+                <tr>
+                    <th>Fruta *</th>
+                    <th>Variedad</th>
+                    <th>Clasificación</th>
+                    <th>Envase</th>
+                    <th>Kg</th>
+                    <th>Marca</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="gridBody"></tbody>
+        </table>
+        <button type="button" class="btn" style="margin-top: 15px;" onclick="agregarFila()">+ Cargar una nueva</button>
+    </div>
+    <div style="margin-top: 20px; display: flex; gap: 10px;">
+        <button type="submit" class="btn btn-success">Guardar</button>
+        <a href="{{ url_for('listar_productos') }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+
+<script>
+const MAESTROS = {
+    fruta: {{ frutas | map(attribute='nombre') | list | tojson }},
+    variedad: {{ variedades | map(attribute='nombre') | list | tojson }},
+    clasificacion: {{ clasificaciones | map(attribute='nombre') | list | tojson }},
+    envase: {{ envases | map(attribute='nombre') | list | tojson }},
+    kilogramo: {{ kilogramos | map(attribute='nombre') | list | tojson }},
+    marca: {{ marcas | map(attribute='nombre') | list | tojson }}
+};
+const API_NUEVO = {
+    fruta: '/api/frutas/nueva', variedad: '/api/variedades/nueva', clasificacion: '/api/clasificaciones/nueva',
+    envase: '/api/envases/nuevo', kilogramo: '/api/kilogramos/nuevo', marca: '/api/marcas/nueva'
+};
+let filaIdx = 0;
+
+function buildSelect(campo, idx, valor, required) {
+    const opts = MAESTROS[campo] || [];
+    let html = `<select name="${campo}_${idx}" class="sel-${campo}" onchange="onMaestroChange(this,'${campo}')">`;
+    html += `<option value="">—</option>`;
+    html += `<option value="__nuevo__" style="font-weight:bold;background:#fef3c7;">Cargar nuevo</option>`;
+    opts.forEach(v => { html += `<option value="${v.replace(/"/g,'&quot;')}" ${v===valor?'selected':''}>${v}</option>`; });
+    if (valor && !opts.includes(valor)) html += `<option value="${valor}" selected>${valor}</option>`;
+    html += '</select>';
+    if (required) html = html.replace('<select', '<select required');
+    return html;
+}
+
+function filaHtml(idx, datos) {
+    datos = datos || {};
+    return `<tr class="fila-producto">
+        ${datos.id ? `<input type="hidden" name="producto_id_${idx}" value="${datos.id}">` : ''}
+        <td>${buildSelect('fruta', idx, datos.fruta||'', true)}</td>
+        <td>${buildSelect('variedad', idx, datos.variedad||'')}</td>
+        <td>${buildSelect('clasificacion', idx, datos.clasificacion||'')}</td>
+        <td>${buildSelect('envase', idx, datos.envase||'')}</td>
+        <td>${buildSelect('kilogramo', idx, datos.kilogramo||'')}</td>
+        <td>${buildSelect('marca', idx, datos.marca||'')}</td>
+        <td><button type="button" class="btn btn-danger" style="padding:6px 10px;font-size:11px;" onclick="quitarFila(this)">✕</button></td>
+    </tr>`;
+}
+
+function agregarFila(datos) {
+    document.getElementById('gridBody').insertAdjacentHTML('beforeend', filaHtml(filaIdx++, datos || {}));
+}
+
+function quitarFila(btn) {
+    const tr = btn.closest('tr');
+    const hid = tr.querySelector('input[name^="producto_id_"]');
+    if (hid && hid.value) {
+        if (!confirm('¿Eliminar esta combinación?')) return;
+        fetch('/productos/' + hid.value + '/eliminar-linea', { method: 'POST' })
+            .then(r => r.json()).then(d => { if (d.success) tr.remove(); else alert(d.error || 'Error'); });
+    } else tr.remove();
+}
+
+function onMaestroChange(sel, campo) {
+    if (sel.value !== '__nuevo__') return;
+    const nombre = prompt('Nombre nuevo:');
+    if (!nombre || !nombre.trim()) { sel.value = ''; return; }
+    fetch(API_NUEVO[campo], {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({ nombre: nombre.trim() })
+    }).then(r => r.json()).then(d => {
+        if (d.error) { alert(d.error); sel.value = ''; return; }
+        const v = nombre.trim();
+        if (!MAESTROS[campo].includes(v)) MAESTROS[campo].push(v);
+        MAESTROS[campo].sort();
+        const idx = sel.name.split('_').pop();
+        const tr = sel.closest('tr');
+        const datos = {};
+        tr.querySelectorAll('select').forEach(s => {
+            const c = s.className.replace('sel-','');
+            datos[c] = s === sel ? v : s.value;
+        });
+        const hid = tr.querySelector('input[type=hidden]');
+        if (hid) datos.id = hid.value;
+        tr.outerHTML = filaHtml(parseInt(idx), datos);
+    });
+}
+
+const existentes = [
+    {% for p in productos %}
+    { id: {{ p.id }}, fruta: {{ p.fruta|tojson }}, variedad: {{ (p.variedad or '')|tojson }},
+      clasificacion: {{ (p.clasificacion or '')|tojson }}, envase: {{ (p.envase or '')|tojson }},
+      kilogramo: {{ (p.kilogramo or '')|tojson }}, marca: {{ (p.marca or '')|tojson }} }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+if (existentes.length) existentes.forEach(d => agregarFila(d));
+else agregarFila();
+</script>
+{% endblock %}

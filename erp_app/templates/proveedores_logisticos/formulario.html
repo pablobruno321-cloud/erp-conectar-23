@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}{% if proveedor %}Editar{% else %}Nuevo{% endif %} Proveedor Logístico{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>{% if proveedor %}Editar{% else %}Nuevo{% endif %} Proveedor Logístico</h2>
+</div>
+
+{% if error %}
+<div style="background: #fed7d7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">{{ error }}</div>
+{% endif %}
+
+<div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <form method="POST">
+        <div class="form-group">
+            <label for="nombre">Proveedor *</label>
+            <input type="text" id="nombre" name="nombre" value="{{ proveedor.nombre if proveedor else '' }}" required>
+        </div>
+        <div class="form-group">
+            <label for="cuit">CUIT</label>
+            <input type="text" id="cuit" name="cuit" value="{{ proveedor.cuit if proveedor else '' }}">
+        </div>
+        <div class="form-group">
+            <label for="telefono">Teléfono</label>
+            <input type="text" id="telefono" name="telefono" value="{{ proveedor.telefono if proveedor else '' }}">
+        </div>
+        <div class="form-group">
+            <label for="email">Mail</label>
+            <input type="email" id="email" name="email" value="{{ proveedor.email if proveedor else '' }}">
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-success">Guardar</button>
+            <a href="{{ url_for('listar_proveedores_logisticos') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

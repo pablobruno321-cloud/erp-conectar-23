@@ -15,9 +15,24 @@
 
 <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px;">
     <form method="POST">
-        <div class="form-group">
-            <label for="nombre">Nombre *</label>
+            <div class="form-group">
+            <label for="nombre">Cliente *</label>
             <input type="text" id="nombre" name="nombre" value="{{ cliente.nombre if cliente else '' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="mercado">Mercado</label>
+            <input type="text" id="mercado" name="mercado" value="{{ cliente.mercado if cliente else '' }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="puesto">Puesto</label>
+            <input type="text" id="puesto" name="puesto" value="{{ cliente.puesto if cliente else '' }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="contacto">Contacto</label>
+            <input type="text" id="contacto" name="contacto" value="{{ cliente.contacto if cliente else '' }}">
         </div>
         
         <div class="form-group">
@@ -31,13 +46,13 @@
         </div>
         
         <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" value="{{ cliente.email if cliente else '' }}">
+            <label for="direccion">Dirección</label>
+            <input type="text" id="direccion" name="direccion" value="{{ cliente.direccion if cliente else '' }}">
         </div>
         
         <div class="form-group">
-            <label for="direccion">Dirección</label>
-            <input type="text" id="direccion" name="direccion" value="{{ cliente.direccion if cliente else '' }}">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="{{ cliente.email if cliente else '' }}">
         </div>
         
         <div style="display: flex; gap: 10px;">

@@ -1,0 +1,120 @@
+/* Pedidos Logísticos — vista tipo planilla */
+.pl-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 24px;
+    align-items: flex-end;
+    background: #fff;
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+}
+.pl-filtros .campo { min-width: 200px; }
+.pl-filtros label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: 0;
+}
+.pl-filtros label.lbl-fecha { background: #2b6cb0; }
+.pl-filtros label.lbl-tpte,
+.pl-filtros label.lbl-prov { background: #c53030; }
+.pl-filtros select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 2px solid #cbd5e0;
+    border-radius: 0 0 6px 6px;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+.pl-wrap {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow-x: auto;
+}
+
+#tablaPedidosLog.pl-tabla,
+#tablaPedidosProv.pl-tabla {
+    width: 100% !important;
+    font-size: 12px !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border: 2px solid #a0aec0 !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+#tablaPedidosLog.pl-tabla thead tr.titulos th,
+#tablaPedidosProv.pl-tabla thead tr.titulos th {
+    color: #fff !important;
+    padding: 10px 8px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    border-right: 1px solid rgba(255,255,255,0.25) !important;
+    border-bottom: 2px solid #718096 !important;
+}
+
+#tablaPedidosLog.pl-tabla th,
+#tablaPedidosLog.pl-tabla td,
+#tablaPedidosProv.pl-tabla th,
+#tablaPedidosProv.pl-tabla td {
+    padding: 8px 10px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-right: 1px solid #e2e8f0 !important;
+}
+
+#tablaPedidosLog.pl-tabla thead tr.titulos th.pl-g-ped,
+#tablaPedidosProv.pl-tabla thead tr.titulos th.pl-g-ped { background: #4a5568 !important; }
+#tablaPedidosLog.pl-tabla thead tr.titulos th.pl-g-log,
+#tablaPedidosProv.pl-tabla thead tr.titulos th.pl-g-log { background: #9b2c7a !important; }
+#tablaPedidosLog.pl-tabla tbody td.pl-g-ped,
+#tablaPedidosProv.pl-tabla tbody td.pl-g-ped { background: #f7fafc !important; font-weight: 600 !important; }
+#tablaPedidosLog.pl-tabla tbody td.pl-g-ped .pl-link-pedido,
+#tablaPedidosProv.pl-tabla tbody td.pl-g-ped .pl-link-pedido {
+    color: #2b6cb0; font-weight: 700; text-decoration: none;
+}
+#tablaPedidosLog.pl-tabla tbody td.pl-g-ped .pl-link-pedido:hover,
+#tablaPedidosProv.pl-tabla tbody td.pl-g-ped .pl-link-pedido:hover { text-decoration: underline; }
+#tablaPedidosLog.pl-tabla thead tr.titulos th.pl-g-prov { background: #2b6cb0 !important; }
+#tablaPedidosLog.pl-tabla thead tr.titulos th.pl-g-cli,
+#tablaPedidosProv.pl-tabla thead tr.titulos th.pl-g-cli { background: #276749 !important; }
+
+#tablaPedidosLog.pl-tabla tbody td.pl-g-log,
+#tablaPedidosProv.pl-tabla tbody td.pl-g-log { background: #fdf2f8 !important; color: #702459 !important; }
+#tablaPedidosLog.pl-tabla tbody td.pl-g-prov { background: #ebf8ff !important; color: #1a365d !important; }
+#tablaPedidosLog.pl-tabla tbody td.pl-g-cli,
+#tablaPedidosProv.pl-tabla tbody td.pl-g-cli { background: #f0fff4 !important; color: #22543d !important; }
+
+#tablaPedidosLog.pl-tabla td.pl-cli-nombre,
+#tablaPedidosProv.pl-tabla td.pl-cli-nombre { text-align: left !important; font-weight: 600; }
+#tablaPedidosLog.pl-tabla td.pl-dir,
+#tablaPedidosProv.pl-tabla td.pl-dir { text-align: left !important; max-width: 220px; }
+
+.pl-vacio {
+    text-align: center;
+    color: #a0aec0;
+    padding: 32px 16px;
+    font-size: 14px;
+}
+
+.pl-link-pedido {
+    color: #2b6cb0;
+    font-weight: 600;
+    text-decoration: none;
+}
+.pl-link-pedido:hover { text-decoration: underline; }

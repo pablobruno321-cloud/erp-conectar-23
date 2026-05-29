@@ -16,22 +16,27 @@
 <table>
     <thead>
         <tr>
-            <th>Nombre</th>
+            <th>Cliente</th>
+            <th>Mercado</th>
+            <th>Puesto</th>
             <th>CUIT</th>
+            <th>Contacto</th>
             <th>Teléfono</th>
-            <th>Email</th>
+            <th>Dirección</th>
             <th>Saldo</th>
-            <th>Estado</th>
             <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
         {% for cliente in clientes %}
-        <tr class="fila-datos" data-busqueda="{{ cliente.nombre.lower() }} {{ cliente.cuit or '' }} {{ cliente.email or '' }}">
+        <tr class="fila-datos" data-busqueda="{{ cliente.nombre.lower() }} {{ cliente.cuit or '' }} {{ cliente.contacto or '' }} {{ cliente.direccion or '' }}">
             <td><strong>{{ cliente.nombre }}</strong></td>
+            <td>{{ cliente.mercado or '-' }}</td>
+            <td>{{ cliente.puesto or '-' }}</td>
             <td>{{ cliente.cuit or '-' }}</td>
+            <td>{{ cliente.contacto or '-' }}</td>
             <td>{{ cliente.telefono or '-' }}</td>
-            <td>{{ cliente.email or '-' }}</td>
+            <td>{{ cliente.direccion or '-' }}</td>
             <td style="text-align: right;">${{ cliente.saldo | eur }}</td>
             <td>
                 {% if cliente.activo %}

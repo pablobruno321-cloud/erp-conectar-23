@@ -1,0 +1,287 @@
+/* Aging de Clientes y Proveedores — estilos con prioridad sobre base.html */
+.ac-totales {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 32px;
+    background: #fff;
+    padding: 18px 22px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 22px;
+}
+.ac-totales > div { flex: 1; min-width: 160px; }
+.ac-totales strong { display: block; font-size: 12px; color: #718096; text-transform: uppercase; margin-bottom: 6px; }
+.ac-totales .val { font-size: 1.35rem; font-weight: 800; }
+.ac-v { color: #38a169 !important; }
+.ac-c { color: #48bb78 !important; }
+.ac-d { color: #e53e3e !important; }
+
+.ac-wrap {
+    background: #fff;
+    border-radius: 8px;
+    padding: 0 0 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow-x: auto;
+}
+
+#tablaAging.ac-tabla,
+#tablaAgingProv.ac-tabla {
+    width: 100% !important;
+    font-size: 12px !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border: 2px solid #a0aec0 !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+    background: #fff !important;
+}
+
+#tablaAging.ac-tabla thead,
+#tablaAgingProv.ac-tabla thead {
+    background: transparent !important;
+    border: none !important;
+}
+
+#tablaAging.ac-tabla thead tr.titulos th,
+#tablaAgingProv.ac-tabla thead tr.titulos th {
+    color: #fff !important;
+    padding: 12px 8px !important;
+    white-space: nowrap !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    text-align: center !important;
+    border-bottom: 2px solid #718096 !important;
+    border-right: 1px solid rgba(255,255,255,0.3) !important;
+}
+
+#tablaAging.ac-tabla thead tr.filtros th,
+#tablaAgingProv.ac-tabla thead tr.filtros th {
+    padding: 6px 8px !important;
+    font-weight: normal !important;
+    text-align: center !important;
+    border-bottom: 2px solid #cbd5e0 !important;
+    border-right: 1px solid #e2e8f0 !important;
+}
+
+#tablaAging.ac-tabla th,
+#tablaAging.ac-tabla td,
+#tablaAgingProv.ac-tabla th,
+#tablaAgingProv.ac-tabla td {
+    padding: 10px 8px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid #cbd5e0 !important;
+    border-right: 1px solid #e2e8f0 !important;
+}
+
+#tablaAging.ac-tabla td.td-cli,
+#tablaAgingProv.ac-tabla td.td-cli {
+    text-align: left !important;
+}
+
+#tablaAging.ac-tabla tr:hover,
+#tablaAgingProv.ac-tabla tr:hover {
+    background: transparent !important;
+}
+
+/* Bloque azul: Cliente/Proveedor → Comisión (clientes) o Costo (proveedores) */
+#tablaAging.ac-tabla thead tr.titulos th.ac-g-azul,
+#tablaAgingProv.ac-tabla thead tr.titulos th.ac-g-azul {
+    background: #2b6cb0 !important;
+    color: #fff !important;
+}
+#tablaAging.ac-tabla thead tr.filtros th.ac-g-azul,
+#tablaAgingProv.ac-tabla thead tr.filtros th.ac-g-azul {
+    background: #bee3f8 !important;
+    color: #2d3748 !important;
+}
+#tablaAging.ac-tabla tbody td.ac-g-azul,
+#tablaAgingProv.ac-tabla tbody td.ac-g-azul {
+    background: #ebf8ff !important;
+    color: #1a365d !important;
+}
+/* Filas hijas (pedidos): tonalidad más suave */
+#tablaAging.ac-tabla tbody tr.fila-pedido td.ac-g-azul,
+#tablaAgingProv.ac-tabla tbody tr.fila-pedido td.ac-g-azul {
+    background: #f8fcff !important;
+    color: #4a5568 !important;
+    font-weight: 400 !important;
+}
+/* Filas madre (cliente/proveedor): tonalidad más oscura */
+#tablaAging.ac-tabla tbody tr.fila-cliente td.ac-g-azul,
+#tablaAgingProv.ac-tabla tbody tr.fila-proveedor td.ac-g-azul {
+    background: #dbeafe !important;
+    color: #1a365d !important;
+}
+#tablaAging.ac-tabla th.ac-g-comision,
+#tablaAging.ac-tabla td.ac-g-comision {
+    border-right: 3px solid #3182ce !important;
+}
+#tablaAgingProv.ac-tabla th.ac-g-costo-fin,
+#tablaAgingProv.ac-tabla td.ac-g-costo-fin {
+    border-right: 3px solid #3182ce !important;
+}
+
+/* Bloque verde: Total cobrado / pagado */
+#tablaAging.ac-tabla thead tr.titulos th.ac-g-verde,
+#tablaAgingProv.ac-tabla thead tr.titulos th.ac-g-verde {
+    background: #276749 !important;
+    color: #fff !important;
+}
+#tablaAging.ac-tabla thead tr.filtros th.ac-g-verde,
+#tablaAgingProv.ac-tabla thead tr.filtros th.ac-g-verde {
+    background: #c6f6d5 !important;
+}
+#tablaAging.ac-tabla tbody td.ac-g-verde,
+#tablaAgingProv.ac-tabla tbody td.ac-g-verde {
+    background: #f0fff4 !important;
+    color: #22543d !important;
+    font-weight: 600 !important;
+}
+#tablaAging.ac-tabla tbody tr.fila-cliente td.ac-g-verde,
+#tablaAgingProv.ac-tabla tbody tr.fila-proveedor td.ac-g-verde {
+    background: #d8f3e3 !important;
+    color: #22543d !important;
+    font-weight: 600 !important;
+}
+#tablaAging.ac-tabla tbody tr.fila-pedido td.ac-g-verde,
+#tablaAgingProv.ac-tabla tbody tr.fila-pedido td.ac-g-verde {
+    background: #f6fff9 !important;
+    color: #4a5568 !important;
+    font-weight: 400 !important;
+}
+#tablaAging.ac-tabla th.ac-g-cobrado,
+#tablaAging.ac-tabla td.ac-g-cobrado,
+#tablaAgingProv.ac-tabla th.ac-g-cobrado,
+#tablaAgingProv.ac-tabla td.ac-g-cobrado {
+    border-right: 3px solid #38a169 !important;
+}
+
+/* Bloque rojo: deudas */
+#tablaAging.ac-tabla thead tr.titulos th.ac-g-rojo,
+#tablaAgingProv.ac-tabla thead tr.titulos th.ac-g-rojo {
+    background: #c53030 !important;
+    color: #fff !important;
+}
+#tablaAging.ac-tabla thead tr.filtros th.ac-g-rojo,
+#tablaAgingProv.ac-tabla thead tr.filtros th.ac-g-rojo {
+    background: #fed7d7 !important;
+}
+#tablaAging.ac-tabla tbody td.ac-g-rojo,
+#tablaAgingProv.ac-tabla tbody td.ac-g-rojo {
+    background: #fff5f5 !important;
+    color: #9b2c2c !important;
+    font-weight: 600 !important;
+}
+#tablaAging.ac-tabla tbody tr.fila-cliente td.ac-g-rojo,
+#tablaAgingProv.ac-tabla tbody tr.fila-proveedor td.ac-g-rojo {
+    background: #fed7d7 !important;
+    color: #9b2c2c !important;
+    font-weight: 600 !important;
+}
+#tablaAging.ac-tabla tbody tr.fila-pedido td.ac-g-rojo,
+#tablaAgingProv.ac-tabla tbody tr.fila-pedido td.ac-g-rojo {
+    background: #fffafa !important;
+    color: #718096 !important;
+    font-weight: 400 !important;
+}
+#tablaAging.ac-tabla th.ac-g-deuda-com,
+#tablaAging.ac-tabla td.ac-g-deuda-com {
+    border-right: 3px solid #e53e3e !important;
+}
+
+/* % Pagado y Estado */
+#tablaAging.ac-tabla thead tr.titulos th.ac-g-info,
+#tablaAgingProv.ac-tabla thead tr.titulos th.ac-g-info {
+    background: #2b6cb0 !important;
+    color: #fff !important;
+}
+#tablaAging.ac-tabla thead tr.filtros th.ac-g-info,
+#tablaAgingProv.ac-tabla thead tr.filtros th.ac-g-info {
+    background: #bee3f8 !important;
+}
+#tablaAging.ac-tabla tbody td.ac-g-info,
+#tablaAgingProv.ac-tabla tbody td.ac-g-info {
+    background: #ebf8ff !important;
+}
+#tablaAging.ac-tabla tbody tr.fila-cliente td.ac-g-info,
+#tablaAgingProv.ac-tabla tbody tr.fila-proveedor td.ac-g-info {
+    background: #dbeafe !important;
+    color: #1a365d !important;
+}
+#tablaAging.ac-tabla tbody tr.fila-pedido td.ac-g-info,
+#tablaAgingProv.ac-tabla tbody tr.fila-pedido td.ac-g-info {
+    background: #f8fcff !important;
+    color: #4a5568 !important;
+    font-weight: 400 !important;
+}
+#tablaAging.ac-tabla tbody tr.fila-pedido td.ac-g-pct.pct-pendiente,
+#tablaAgingProv.ac-tabla tbody tr.fila-pedido td.ac-g-pct.pct-pendiente {
+    color: #c53030 !important;
+    font-weight: 600 !important;
+}
+#tablaAging.ac-tabla td.ac-g-pct.pct-pendiente,
+#tablaAgingProv.ac-tabla td.ac-g-pct.pct-pendiente {
+    color: #c53030 !important;
+    font-weight: 800 !important;
+}
+
+#tablaAging .fila-cliente,
+#tablaAging .fila-cliente.expandida { font-weight: 600 !important; }
+#tablaAging .fila-pedido,
+#tablaAging .fila-pedido td { font-weight: 400 !important; }
+#tablaAging .fila-pedido .link-pedido { font-weight: 500 !important; }
+#tablaAging .fila-pedido { display: none !important; }
+#tablaAging .fila-pedido.visible { display: table-row !important; }
+#tablaAging .fila-pedido td.ac-g-azul.td-cli { padding-left: 36px !important; }
+
+#tablaAging .btn-expand {
+    width: 28px; height: 28px; border: 1px solid #cbd5e0; background: #fff;
+    border-radius: 4px; cursor: pointer; font-weight: 700; color: #667eea; margin-right: 8px;
+}
+#tablaAging .link-pedido { color: #2b6cb0; font-weight: 600; text-decoration: none; }
+
+#tablaAgingProv .fila-proveedor,
+#tablaAgingProv .fila-proveedor.expandida { font-weight: 600 !important; }
+#tablaAgingProv .fila-pedido,
+#tablaAgingProv .fila-pedido td { font-weight: 400 !important; }
+#tablaAgingProv .fila-pedido .link-pedido { font-weight: 500 !important; }
+#tablaAgingProv.ac-tabla tbody tr.fila-proveedor td.ac-g-costo-fin {
+    background: #dbeafe !important;
+    color: #1a365d !important;
+    font-weight: 600 !important;
+}
+#tablaAgingProv.ac-tabla tbody tr.fila-pedido td.ac-g-costo-fin {
+    background: #f8fcff !important;
+    color: #4a5568 !important;
+    font-weight: 400 !important;
+}
+#tablaAgingProv .fila-pedido { display: none !important; }
+#tablaAgingProv .fila-pedido.visible { display: table-row !important; }
+#tablaAgingProv .fila-pedido td.ac-g-azul.td-cli { padding-left: 36px !important; }
+#tablaAgingProv .btn-expand {
+    width: 28px; height: 28px; border: 1px solid #cbd5e0; background: #fff;
+    border-radius: 4px; cursor: pointer; font-weight: 700; color: #667eea; margin-right: 8px;
+}
+#tablaAgingProv .link-pedido { color: #2b6cb0; font-weight: 600; text-decoration: none; }
+
+#tablaAging .badge-ac-ok,
+#tablaAgingProv .badge-ac-ok {
+    background: #c6f6d5; color: #22543d; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; font-weight: 700;
+}
+#tablaAging .badge-ac-pend,
+#tablaAgingProv .badge-ac-pend {
+    background: #fed7d7; color: #c53030; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; font-weight: 700;
+}
+
+.ac-vacio { text-align: center; color: #a0aec0; padding: 24px; }
+
+#tablaAging [data-filter],
+#tablaAgingProv [data-filter] {
+    width: 100%; padding: 5px 6px; font-size: 11px;
+    border: 1px solid #cbd5e0; border-radius: 4px; box-sizing: border-box;
+}

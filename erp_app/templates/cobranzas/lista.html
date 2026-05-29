@@ -5,39 +5,120 @@
 {% block content %}
 <div class="header">
     <h2>Cobranzas</h2>
-    <a href="{{ url_for('nueva_cobranza') }}" class="btn btn-success">+ Nueva Cobranza</a>
+    <div style="display:flex;gap:10px;">
+        <a href="{{ url_for('cobranzas_eliminadas') }}" class="btn btn-secondary">Cobranzas eliminadas</a>
+        <a href="{{ url_for('nueva_cobranza') }}" class="btn btn-success">+ Nueva Cobranza</a>
+    </div>
 </div>
 
 {% if cobranzas %}
-<table>
+<table style="box-shadow:none;">
     <thead>
         <tr>
+            <th style="width:40px;"></th>
             <th>Fecha</th>
             <th>Cliente</th>
-            <th>Monto</th>
-            <th>Método</th>
-            <th>Referencia</th>
+            <th style="text-align:right;">Total cobrado</th>
+            <th>Formas de cobro</th>
+            <th style="text-align:center;">Imputaciones</th>
             <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
-        {% for cobranza in cobranzas %}
+        {% for cob in cobranzas %}
         <tr>
-            <td>{{ cobranza.fecha_cobranza.strftime('%d/%m/%Y %H:%M') }}</td>
-            <td>{{ cobranza.cliente.nombre }}</td>
-            <td>${{ "%.2f"|format(cobranza.monto) }}</td>
-            <td>{{ cobranza.metodo or '-' }}</td>
-            <td>{{ cobranza.referencia or '-' }}</td>
             <td>
-                <a href="{{ url_for('editar_cobranza', id=cobranza.id) }}" class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;">Editar</a>
+                <button type="button" class="btn-toggle" onclick="toggleDetalle({{ cob.id }})" id="btn-cob-{{ cob.id }}">+</button>
+            </td>
+            <td>{{ cob.fecha_cobranza.strftime('%d/%m/%Y') if cob.fecha_cobranza else '-' }}</td>
+            <td><strong>{{ cob.cliente.nombre }}</strong></td>
+            <td style="text-align:right;font-weight:600;">{{ cob.monto | moneda }}</td>
+            <td>
+                {% for ln in cob.lineas %}
+                <span style="display:inline-block;background:#edf2f7;padding:2px 8px;border-radius:4px;margin:2px;font-size:11px;">
+                    {{ ln.forma }}: {{ ln.monto | moneda }}
+                </span>
+                {% endfor %}
+                {% if not cob.lineas %}{{ cob.metodo or '-' }}{% endif %}
+            </td>
+            <td style="text-align:center;">{{ cob.imputaciones|length }}</td>
+            <td class="actions">
+                <a href="{{ url_for('ver_cobranza', id=cob.id) }}" class="btn btn-secondary" style="padding:6px 10px;font-size:11px;">Ver</a>
+                <a href="{{ url_for('editar_cobranza', id=cob.id) }}" class="btn" style="padding:6px 10px;font-size:11px;">Editar</a>
+                <button type="button" class="btn btn-danger" style="padding:6px 10px;font-size:11px;" onclick="eliminarCobranza({{ cob.id }})">Eliminar</button>
+            </td>
+        </tr>
+        <tr id="det-cob-{{ cob.id }}" style="display:none;">
+            <td colspan="7" style="padding:0;background:#f7fafc;">
+                <div style="padding:20px;">
+                    {% if cob.imputaciones %}
+                    <h4 style="margin:0 0 12px;color:#667eea;">Imputaciones a pedidos</h4>
+                    <table style="width:100%;box-shadow:none;font-size:13px;margin-bottom:20px;">
+                        <thead>
+                            <tr>
+                                <th>Pedido</th>
+                                <th>Proveedor / detalle</th>
+                                <th style="text-align:right;">Pago proveedor</th>
+                                <th style="text-align:right;">Comisión</th>
+                                <th style="text-align:right;">Total imputado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for imp in cob.imputaciones|sort(attribute='pedido.fecha_venta') %}
+                            <tr>
+                                <td><strong>{{ imp.pedido.numero }}</strong>
+                                    <div style="font-size:11px;color:#718096;">{{ imp.pedido.fecha_venta.strftime('%d/%m/%Y') if imp.pedido.fecha_venta else '' }}</div>
+                                </td>
+                                <td style="font-size:11px;">
+                                    {% for it in imp.pedido.items %}
+                                    {% if it.producto %}
+                                    <div>{{ it.producto.proveedor.nombre }} — {{ it.producto.fruta }}{% if it.producto.variedad %} / {{ it.producto.variedad }}{% endif %}</div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td style="text-align:right;">{{ (imp.pago_proveedor or 0) | moneda }}</td>
+                                <td style="text-align:right;">{{ (imp.comision or 0) | moneda }}</td>
+                                <td style="text-align:right;font-weight:600;">{{ imp.monto_imputado | moneda }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p style="color:#718096;margin:0 0 15px;">Sin imputaciones (saldo a favor del cliente).</p>
+                    {% endif %}
+                    {% if cob.notas %}
+                    <p style="font-size:13px;"><strong>Notas:</strong> {{ cob.notas }}</p>
+                    {% endif %}
+                </div>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% else %}
-<div class="header" style="text-align: center; color: #a0aec0;">
-    <p>No hay cobranzas aún. <a href="{{ url_for('nueva_cobranza') }}">Registrar la primera cobranza</a></p>
+<div style="text-align:center;padding:40px;color:#a0aec0;">
+    <p>No hay cobranzas registradas. <a href="{{ url_for('nueva_cobranza') }}">Registrar la primera</a></p>
 </div>
 {% endif %}
+
+<style>
+.btn-toggle { width:28px;height:28px;border:1px solid #cbd5e0;background:#fff;border-radius:4px;cursor:pointer;font-weight:bold;color:#667eea; }
+.btn-toggle:hover { background:#edf2f7; }
+</style>
+
+<script>
+function toggleDetalle(id) {
+    const row = document.getElementById('det-cob-' + id);
+    const btn = document.getElementById('btn-cob-' + id);
+    const open = row.style.display !== 'none';
+    row.style.display = open ? 'none' : 'table-row';
+    btn.textContent = open ? '+' : '−';
+}
+function eliminarCobranza(id) {
+    if (!confirm('¿Eliminar esta cobranza? Pasará a Cobranzas eliminadas y dejará de impactar en saldos e informes.')) return;
+    fetch('/cobranzas/' + id + '/eliminar', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => { if (d.success) location.reload(); else alert(d.error || 'Error'); });
+}
+</script>
 {% endblock %}

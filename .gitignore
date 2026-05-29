@@ -16,3 +16,16 @@ venv/
 .coverage
 htmlcov/
 erp_app/erp.db
+erp_app/erp.db.*
+erp_app/uploads/
+backups/
+erp_nube.zip
+backup_before_restructuring/
+WEBAPPS/
+datos_importacion/
+debug_*.py
+cookies.txt
+cot*.html
+login_headers.txt
+URL_PUBLICA.txt
+*.zip

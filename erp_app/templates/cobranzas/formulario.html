@@ -1,82 +1,700 @@
 {% extends "base.html" %}
 
-{% block title %}{% if cobranza %}Editar Cobranza{% else %}Nueva Cobranza{% endif %} - ERP{% endblock %}
+{% block title %}{% if solo_lectura %}Ver Cobranza{% elif cobranza %}Editar{% else %}Nueva{% endif %} Cobranza{% endblock %}
+
+{% block extra_css %}
+<style>
+.modal-imputar { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+.modal-box { background:#fff; border-radius:12px; width:98%; max-width:1100px; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.2); }
+.modal-head { padding:18px 22px; border-bottom:1px solid #e2e8f0; }
+.modal-body { overflow:auto; padding:0 22px 15px; flex:1; }
+.modal-foot { padding:15px 22px; border-top:1px solid #e2e8f0; background:#f7fafc; }
+.lista-pedidos-modal { list-style:none; margin:0; padding:0; }
+.pedido-modal-item { border:1px solid #e2e8f0; border-radius:8px; margin-bottom:8px; overflow:hidden; }
+.pedido-modal-item.seleccionada { border-color:#667eea; background:#ebf8ff; }
+.pedido-modal-head { display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; background:#fff; }
+.pedido-modal-head:hover { background:#f7fafc; }
+.pedido-modal-detalle { display:none; padding:0 14px 14px 52px; font-size:12px; color:#4a5568; border-top:1px solid #edf2f7; background:#fafafa; }
+.pedido-modal-detalle.open { display:block; padding-top:12px; }
+.pedido-modal-detalle table { width:100%; font-size:11px; box-shadow:none; }
+.pedido-modal-detalle th { text-align:left; padding:4px 8px; color:#718096; font-weight:600; }
+.pedido-modal-detalle td { padding:4px 8px; border-bottom:1px solid #e2e8f0; }
+.btn-exp { width:28px;height:28px;border:1px solid #cbd5e0;background:#fff;border-radius:4px;cursor:pointer;font-weight:bold;color:#667eea;flex-shrink:0; }
+.btn-exp:hover { background:#edf2f7; }
+.totales-modal { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:12px; padding:12px; background:#edf2f7; border-radius:8px; font-size:13px; }
+.totales-modal strong { display:block; font-size:11px; color:#718096; text-transform:uppercase; }
+.tabla-imp-form { width:100%; border-collapse:collapse; font-size:13px; box-shadow:none; margin-top:15px; }
+.tabla-imp-form th { background:#f7fafc; padding:10px; text-align:left; }
+.tabla-imp-form td { padding:10px; border-bottom:1px solid #e2e8f0; vertical-align:middle; }
+.inp-imp { width:100%; max-width:110px; padding:8px; border-radius:6px; box-sizing:border-box; }
+.inp-imp-ingreso {
+    background:#c6f6d5 !important;
+    border:2px solid #38a169 !important;
+    color:#14532d !important;
+    font-weight:700 !important;
+    text-align:right;
+}
+.tabla-imp-form th.th-ingreso {
+    background:#9ae6b4;
+    color:#14532d;
+    font-weight:700;
+}
+.tabla-imp-form td.celda-ingreso { background:#f0fff4; padding:8px; }
+.saldo-resto-cero {
+    color:#166534 !important;
+    font-weight:700;
+    background:#dcfce7;
+}
+.saldo-resto-pend {
+    color:#991b1b !important;
+    font-weight:700;
+    background:#fee2e2;
+}
+.tabla-imp-form th.th-saldo-cero {
+    background:#9ae6b4 !important;
+    color:#14532d !important;
+    font-weight:700;
+    text-align:right;
+}
+.tabla-imp-form th.th-saldo-pend {
+    background:#f87171 !important;
+    color:#7f1d1d !important;
+    font-weight:700;
+    text-align:right;
+}
+.cobranza-fila-campos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px 24px;
+    align-items: flex-end;
+}
+.cobranza-campo { flex: 0 0 auto; }
+.cobranza-campo label { display: block; margin-bottom: 4px; font-weight: 600; color: #4a5568; font-size: 13px; }
+.cobranza-campo input,
+.cobranza-campo select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 14px;
+}
+.cobranza-w-fecha { width: 11.5rem; }
+.cobranza-w-cliente { width: 20rem; max-width: 100%; }
+.cobranza-w-forma { width: 11rem; }
+.cobranza-w-monto { width: 10.5rem; }
+.cobranza-cobro-encabezado,
+.linea-cobro {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    align-items: flex-end;
+    margin-bottom: 10px;
+}
+.cobranza-cobro-encabezado { margin-bottom: 6px; }
+.cobranza-cobro-accion { width: 2.6rem; flex-shrink: 0; }
+.linea-cobro .cobranza-campo input,
+.linea-cobro .cobranza-campo select { text-align: left; }
+.linea-cobro .cobranza-w-monto input { text-align: right; }
+.linea-cobro .btn-quitar { flex: 0 0 auto; padding: 8px 12px; margin-bottom: 2px; }
+.cobranza-totales {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 32px;
+    margin-top: 25px;
+    padding: 15px 18px;
+    background: #f7fafc;
+    border-radius: 8px;
+}
+.cobranza-totales > div { flex: 0 0 auto; min-width: 10rem; }
+.cobranza-totales strong { display: block; font-size: 12px; color: #718096; margin-bottom: 4px; }
+.cobranza-totales .valor { font-size: 20px; font-weight: 700; }
+.cobranza-solo-lectura input,
+.cobranza-solo-lectura select,
+.cobranza-solo-lectura textarea {
+    background: #f7fafc !important;
+    pointer-events: none;
+}
+.cobranza-solo-lectura .inp-imp-ingreso {
+    background: #e6ffed !important;
+    border-color: #9ae6b4 !important;
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="header">
-    <h2>{% if cobranza %}Editar Cobranza{% else %}Nueva Cobranza{% endif %}</h2>
+    <h2>{% if solo_lectura %}Ver Cobranza{% elif cobranza %}Editar Cobranza{% else %}Nueva Cobranza{% endif %}</h2>
+    {% if solo_lectura %}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ url_for('editar_cobranza', id=cobranza.id) }}" class="btn">Editar</a>
+        <a href="{{ url_for('listar_cobranzas') }}" class="btn btn-secondary">Volver</a>
+    </div>
+    {% endif %}
 </div>
 
-{% if error %}
-<div class="error" style="background: #fed7d7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-    {{ error }}
+{% if solo_lectura %}
+<div style="background:#ebf8ff;border:1px solid #90cdf4;color:#2c5282;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-weight:600;">
+    Modo solo lectura — para modificar use el botón <strong>Editar</strong>.
 </div>
 {% endif %}
 
-<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 800px;">
-    <form method="POST">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div class="form-group">
-                <label for="cliente_id">Cliente *</label>
-                <select id="cliente_id" name="cliente_id" required>
-                    <option value="">Seleccionar cliente</option>
-                    {% for cliente in clientes %}
-                    <option value="{{ cliente.id }}" {% if cobranza and cobranza.cliente_id == cliente.id %}selected{% endif %}>{{ cliente.nombre }} (Deuda: ${{ "%.2f"|format(cliente.saldo) }})</option>
+{% if error %}
+<div style="background:#fed7d7;padding:15px;border-radius:5px;margin-bottom:20px;">{{ error }}</div>
+{% endif %}
+
+{% if solo_lectura %}<div id="formCobranza" class="cobranza-solo-lectura">{% else %}<form method="POST" id="formCobranza">{% endif %}
+    <div style="background:white;padding:25px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:20px;">
+        <div class="cobranza-fila-campos">
+            <div class="cobranza-campo cobranza-w-fecha">
+                <label>Fecha *</label>
+                <input type="date" name="fecha_cobranza" {% if not solo_lectura %}required{% endif %}
+                    value="{{ cobranza.fecha_cobranza.strftime('%Y-%m-%d') if cobranza and cobranza.fecha_cobranza else '' }}">
+            </div>
+            <div class="cobranza-campo cobranza-w-cliente">
+                <label>Cliente *</label>
+                <select name="cliente_id" id="cliente_id" {% if not solo_lectura %}required onchange="onClienteChange()"{% endif %}>
+                    <option value="">Seleccionar</option>
+                    {% for c in clientes %}
+                    <option value="{{ c.id }}" {% if cobranza and cobranza.cliente_id == c.id %}selected{% endif %}>{{ c.nombre }}</option>
                     {% endfor %}
                 </select>
             </div>
-            
-            <div class="form-group">
-                <label for="monto">Monto *</label>
-                <input type="number" id="monto" name="monto" step="0.01" required style="width: 100%;" value="{{ cobranza.monto if cobranza else '' }}">
+        </div>
+
+        <h3 style="margin:25px 0 15px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">Formas de cobro</h3>
+        <div class="cobranza-cobro-encabezado">
+            <div class="cobranza-campo cobranza-w-forma"><label>Forma</label></div>
+            <div class="cobranza-campo cobranza-w-monto"><label>Monto $</label></div>
+            <div class="cobranza-cobro-accion" aria-hidden="true"></div>
+        </div>
+        <div id="lineasCobro">
+            {% if cobranza and cobranza.lineas %}
+                {% for ln in cobranza.lineas %}
+                <div class="linea-cobro">
+                    <div class="cobranza-campo cobranza-w-forma">
+                        <select name="forma_{{ loop.index0 }}" {% if not solo_lectura %}required onchange="onFormaChange(this)"{% endif %}>
+                            <option value="">—</option>
+                            {% if not solo_lectura %}<option value="__nuevo__" style="background:#fef3c7;font-weight:bold;">Nuevo</option>{% endif %}
+                            {% for f in formas %}<option value="{{ f.nombre }}" {% if ln.forma == f.nombre %}selected{% endif %}>{{ f.nombre }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="cobranza-campo cobranza-w-monto">
+                        <input type="text" name="monto_{{ loop.index0 }}" data-numero {% if not solo_lectura %}required{% endif %} value="{{ ln.monto | formato_numero }}" class="monto-linea" {% if not solo_lectura %}oninput="actualizarTotales()"{% endif %}>
+                    </div>
+                    {% if not solo_lectura and (not loop.first or cobranza.lineas|length > 1) %}
+                    <button type="button" class="btn btn-danger btn-quitar" onclick="this.closest('.linea-cobro').remove();sincronizarBotonesLineasCobro();actualizarTotales();">✕</button>
+                    {% else %}
+                    <div class="cobranza-cobro-accion" aria-hidden="true"></div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="linea-cobro">
+                    <div class="cobranza-campo cobranza-w-forma">
+                        <select name="forma_0" required onchange="onFormaChange(this)">
+                            <option value="">—</option>
+                            <option value="__nuevo__" style="background:#fef3c7;font-weight:bold;">Nuevo</option>
+                            {% for f in formas %}<option value="{{ f.nombre }}">{{ f.nombre }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="cobranza-campo cobranza-w-monto">
+                        <input type="text" name="monto_0" data-numero required class="monto-linea" oninput="actualizarTotales()">
+                    </div>
+                    <div class="cobranza-cobro-accion" aria-hidden="true"></div>
+                </div>
+            {% endif %}
+        </div>
+        {% if not solo_lectura %}
+        <button type="button" class="btn" onclick="agregarLineaCobro()">+ Cargar otra</button>
+        {% endif %}
+
+        <div class="cobranza-totales">
+            {% if solo_lectura %}
+            {% set total_imp = cobranza.imputaciones|map(attribute='monto_imputado')|sum %}
+            {% endif %}
+            <div><strong>Total Cobrado</strong><div id="totalCobrado" class="valor" style="color:#667eea;">{% if solo_lectura %}{{ cobranza.monto | moneda }}{% else %}$0{% endif %}</div></div>
+            <div><strong>Total Imputado</strong><div id="totalImputado" class="valor" style="color:#48bb78;">{% if solo_lectura %}{{ total_imp | moneda }}{% else %}$0{% endif %}</div></div>
+            <div><strong>Saldo pendiente de imputar</strong><div id="saldoPendiente" class="valor" style="color:#ed8936;">{% if solo_lectura %}{{ ((cobranza.monto or 0) - (total_imp or 0)) | moneda }}{% else %}$0{% endif %}</div></div>
+        </div>
+        {% if not solo_lectura %}
+        <div id="errorImputacion" style="display:none;color:#c53030;margin-top:10px;font-weight:600;"></div>
+        {% endif %}
+    </div>
+
+    <div style="background:white;padding:25px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
+            <h3 style="margin:0;">Imputaciones</h3>
+            {% if not solo_lectura %}
+            <div style="display:flex;gap:8px;">
+                <button type="button" class="btn btn-success" onclick="abrirModalImputar()" id="btnImputar" disabled>Imputar</button>
+                <button type="button" class="btn" onclick="abrirModalImputar(true)" id="btnAgregarPedidos" disabled style="display:none;">+ Agregar pedidos</button>
+            </div>
+            {% endif %}
+        </div>
+        {% if not solo_lectura %}
+        <p id="sinImputaciones" style="color:#a0aec0;">Seleccione un cliente y pulse Imputar para elegir pedidos con saldo pendiente.</p>
+        <p id="hintImputacion" style="display:none;font-size:12px;color:#4a5568;margin:0 0 12px;padding:10px 12px;background:#f0fff4;border-radius:6px;border:1px solid #9ae6b4;">
+            Distribuí el <strong>total cobrado</strong> entre pago a proveedor y comisión (en verde). No hace falta cubrir todo el pedido: podés imputar un monto parcial. La suma imputada no puede superar lo cobrado.
+        </p>
+        {% endif %}
+        <div id="imputacionesContainer"></div>
+    </div>
+
+    {% if not solo_lectura %}
+    <div style="margin-top:20px;display:flex;gap:10px;">
+        <button type="submit" class="btn btn-success">Guardar cobranza</button>
+        <a href="{{ url_for('listar_cobranzas') }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+    {% endif %}
+{% if solo_lectura %}</div>{% else %}</form>{% endif %}
+
+{% if not solo_lectura %}
+<!-- Modal selección pedidos -->
+<div id="modalImputar" class="modal-imputar">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 style="margin:0;color:#667eea;">Seleccionar pedidos a imputar</h3>
+            <p style="margin:6px 0 0;color:#718096;font-size:13px;">Pedidos con saldo pendiente de pago a proveedor y/o comisión. Orden: más viejo primero.</p>
+        </div>
+        <div class="modal-body">
+            <div id="listaPedidosPendientes"></div>
+            <div class="totales-modal" id="totalesModal" style="display:none;">
+                <div><strong>Filas seleccionadas</strong><span id="cntSeleccion">0</span></div>
+                <div><strong>Suma saldo proveedor</strong><span id="sumSaldoProv">$0</span></div>
+                <div><strong>Suma saldo comisión</strong><span id="sumSaldoCom">$0</span></div>
+                <div><strong>Total saldos</strong><span id="sumSaldoTotal">$0</span></div>
             </div>
         </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div class="form-group">
-                <label for="metodo">Método de Pago</label>
-                <select id="metodo" name="metodo" style="width: 100%;">
-                    <option value="">Seleccionar</option>
-                    <option value="Efectivo" {% if cobranza and cobranza.metodo == 'Efectivo' %}selected{% endif %}>Efectivo</option>
-                    <option value="Transferencia" {% if cobranza and cobranza.metodo == 'Transferencia' %}selected{% endif %}>Transferencia</option>
-                    <option value="Cheque" {% if cobranza and cobranza.metodo == 'Cheque' %}selected{% endif %}>Cheque</option>
-                    <option value="Tarjeta" {% if cobranza and cobranza.metodo == 'Tarjeta' %}selected{% endif %}>Tarjeta</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="referencia">Referencia (Comprobante)</label>
-                <input type="text" id="referencia" name="referencia" style="width: 100%;" value="{{ cobranza.referencia if cobranza else '' }}">
-            </div>
+        <div class="modal-foot" style="display:flex;justify-content:flex-end;gap:10px;">
+            <button type="button" class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+            <button type="button" class="btn btn-success" onclick="aceptarImputaciones()">Aceptar</button>
         </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div class="form-group">
-                <label for="numero_comprobante">Número de Comprobante</label>
-                <input type="text" id="numero_comprobante" name="numero_comprobante" style="width: 100%;" value="{{ cobranza.numero_comprobante if cobranza else '' }}">
-            </div>
-            
-            <div class="form-group">
-                <label for="tipo_comprobante">Tipo de Comprobante</label>
-                <select id="tipo_comprobante" name="tipo_comprobante" style="width: 100%;">
-                    <option value="">Seleccionar</option>
-                    <option value="Factura" {% if cobranza and cobranza.tipo_comprobante == 'Factura' %}selected{% endif %}>Factura</option>
-                    <option value="Recibo" {% if cobranza and cobranza.tipo_comprobante == 'Recibo' %}selected{% endif %}>Recibo</option>
-                    <option value="Nota de Crédito" {% if cobranza and cobranza.tipo_comprobante == 'Nota de Crédito' %}selected{% endif %}>Nota de Crédito</option>
-                    <option value="Otro" {% if cobranza and cobranza.tipo_comprobante == 'Otro' %}selected{% endif %}>Otro</option>
-                </select>
-            </div>
-        </div>
-        
-        <div class="form-group" style="margin-bottom: 20px;">
-            <label for="notas">Notas</label>
-            <textarea id="notas" name="notas" rows="4" style="width: 100%;">{{ cobranza.notas if cobranza else '' }}</textarea>
-        </div>
-        
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button type="submit" class="btn btn-success">{{ 'Guardar Cambios' if cobranza else 'Registrar Cobranza' }}</button>
-            <a href="{{ url_for('listar_cobranzas') }}" class="btn btn-secondary">Cancelar</a>
-        </div>
-    </form>
+    </div>
 </div>
+{% endif %}
+
+<script>
+const SOLO_LECTURA = {{ solo_lectura|default(false)|tojson }};
+const FORMAS = [{% for f in formas %}{{ f.nombre|tojson }}{% if not loop.last %},{% endif %}{% endfor %}];
+const COBRANZA_ID = {{ cobranza_id|tojson if cobranza_id else 'null' }};
+let lineaIdx = {{ cobranza.lineas|length if cobranza and cobranza.lineas else 1 }};
+let imputaciones = {{ imputaciones_iniciales|tojson if imputaciones_iniciales is defined else '[]' }};
+let pedidosModalCache = [];
+let modoAgregarPedidos = false;
+
+function fmt(n) { return window.ERP ? ERP.formatoMoneda(n) : ('$' + (parseFloat(n) || 0).toFixed(2)); }
+function num(v) {
+    if (window.ERP) return ERP.parseNumero(v);
+    const s = String(v ?? '').trim().replace(/\$/g, '').replace(/\s/g, '');
+    if (!s) return 0;
+    if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+    if ((s.match(/\./g) || []).length > 1) return parseFloat(s.replace(/\./g, '')) || 0;
+    return parseFloat(s.replace(/,/g, '')) || 0;
+}
+function fmtN(v) { return window.ERP ? ERP.formatoNumero(v, 2) : String(v); }
+
+function opcionesForma() {
+    let h = '<option value="">—</option><option value="__nuevo__" style="background:#fef3c7;font-weight:bold;">Nuevo</option>';
+    FORMAS.forEach(f => h += `<option value="${f}">${f}</option>`);
+    return h;
+}
+
+function sincronizarBotonesLineasCobro() {
+    const lineas = [...document.querySelectorAll('#lineasCobro .linea-cobro')];
+    lineas.forEach((ln, i) => {
+        const acc = ln.querySelector('.btn-quitar, .cobranza-cobro-accion');
+        if (!acc) return;
+        if (lineas.length > 1) {
+            if (!acc.classList.contains('btn-quitar')) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-danger btn-quitar';
+                btn.textContent = '✕';
+                btn.onclick = function () { ln.remove(); sincronizarBotonesLineasCobro(); actualizarTotales(); };
+                acc.replaceWith(btn);
+            }
+        } else if (acc.classList.contains('btn-quitar')) {
+            const spacer = document.createElement('div');
+            spacer.className = 'cobranza-cobro-accion';
+            spacer.setAttribute('aria-hidden', 'true');
+            acc.replaceWith(spacer);
+        }
+    });
+}
+
+function agregarLineaCobro() {
+    const div = document.createElement('div');
+    div.className = 'linea-cobro';
+    div.innerHTML = `<div class="cobranza-campo cobranza-w-forma"><select name="forma_${lineaIdx}" required onchange="onFormaChange(this)">${opcionesForma()}</select></div>
+        <div class="cobranza-campo cobranza-w-monto"><input type="text" name="monto_${lineaIdx}" data-numero required class="monto-linea" oninput="actualizarTotales()"></div>
+        <button type="button" class="btn btn-danger btn-quitar" onclick="this.closest('.linea-cobro').remove();sincronizarBotonesLineasCobro();actualizarTotales();">✕</button>`;
+    document.getElementById('lineasCobro').appendChild(div);
+    if (window.ERP) ERP.initInputsNumeroAr(div);
+    lineaIdx++;
+    sincronizarBotonesLineasCobro();
+}
+
+function onFormaChange(sel) {
+    if (sel.value !== '__nuevo__') return;
+    const nombre = prompt('Nueva forma de cobro:');
+    if (!nombre) { sel.value = ''; return; }
+    fetch('{{ url_for("nueva_forma_cobro") }}', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({nombre}) })
+        .then(r=>r.json()).then(d => {
+            if (d.error) { alert(d.error); sel.value=''; return; }
+            if (!FORMAS.includes(d.nombre)) FORMAS.push(d.nombre);
+            document.querySelectorAll('[name^="forma_"]').forEach(s => {
+                const v = s.value; s.innerHTML = opcionesForma(); if (s===sel) s.value = d.nombre; else if ([...s.options].some(o=>o.value===v)) s.value = v;
+            });
+        });
+}
+
+function totalCobradoActual() {
+    return [...document.querySelectorAll('.monto-linea')].reduce((s, inp) => {
+        return s + (window.ERP ? ERP.getInputNumero(inp) : num(inp.value));
+    }, 0);
+}
+
+function totalImputadoCalc() {
+    let prov = 0, com = 0;
+    imputaciones.forEach(imp => {
+        prov += num(imp.pago_proveedor);
+        com += num(imp.comision);
+    });
+    return { prov, com, total: prov + com };
+}
+
+/** Máximo que puede ingresarse en un campo sin superar cobrado ni saldo del pedido. */
+function maxPermitidoImporte(idx, campo) {
+    const imp = imputaciones[idx];
+    if (!imp) return 0;
+    const maxPedido = campo === 'pago_proveedor' ? (imp.max_proveedor || 0) : (imp.max_comision || 0);
+    const otroCampo = campo === 'pago_proveedor' ? num(imp.comision) : num(imp.pago_proveedor);
+    const actual = campo === 'pago_proveedor' ? num(imp.pago_proveedor) : num(imp.comision);
+    const ti = totalImputadoCalc();
+    const tc = totalCobradoActual();
+    const restoCobrado = Math.max(0, tc - (ti.total - actual - otroCampo));
+    return Math.min(maxPedido, restoCobrado + actual);
+}
+
+function actualizarTotales(reRenderTabla) {
+    const tc = totalCobradoActual();
+    const ti = totalImputadoCalc();
+    const diff = tc - ti.total;
+    document.getElementById('totalCobrado').textContent = fmt(tc);
+    const elTi = document.getElementById('totalImputado');
+    elTi.textContent = fmt(ti.total);
+    elTi.style.color = ti.total > tc + 0.01 ? '#c53030' : '#48bb78';
+    const elSaldo = document.getElementById('saldoPendiente');
+    if (diff < -0.01) {
+        elSaldo.textContent = fmt(-diff) + ' (excede cobrado)';
+        elSaldo.style.color = '#c53030';
+    } else {
+        elSaldo.textContent = fmt(diff);
+        elSaldo.style.color = '#ed8936';
+    }
+    const err = document.getElementById('errorImputacion');
+    if (ti.total > tc + 0.01) {
+        err.style.display = 'block';
+        err.textContent = `Imputaste ${fmt(ti.total)} pero solo cobraste ${fmt(tc)}. Bajá pago proveedor y/o comisión hasta cubrir como máximo lo cobrado.`;
+    } else {
+        err.style.display = 'none';
+    }
+    const hint = document.getElementById('hintImputacion');
+    if (hint) hint.style.display = imputaciones.length ? 'block' : 'none';
+    if (reRenderTabla !== false) renderImputaciones();
+    else actualizarSaldosFilas();
+}
+
+function actualizarSaldosFilas() {
+    const rows = document.querySelectorAll('#imputacionesContainer tbody tr');
+    rows.forEach((tr, j) => {
+        const imp = imputaciones[j];
+        if (!imp) return;
+        const rp = restanteProv(imp);
+        const rc = restanteCom(imp);
+        const tdP = tr.querySelector('[data-saldo="prov"]');
+        const tdC = tr.querySelector('[data-saldo="com"]');
+        if (tdP) {
+            tdP.textContent = fmt(rp);
+            tdP.className = rp < 0.01 ? 'saldo-resto-cero' : 'saldo-resto-pend';
+        }
+        if (tdC) {
+            tdC.textContent = fmt(rc);
+            tdC.className = rc < 0.01 ? 'saldo-resto-cero' : 'saldo-resto-pend';
+        }
+        const inpP = tr.querySelector('[name^="imp_pago_proveedor"]');
+        const inpC = tr.querySelector('[name^="imp_comision"]');
+        if (inpP && Math.abs(num(inpP.value) - num(imp.pago_proveedor)) > 0.009) {
+            if (window.ERP && ERP.setInputNumero) ERP.setInputNumero(inpP, imp.pago_proveedor || 0);
+            else inpP.value = fmtN(imp.pago_proveedor || 0);
+        }
+        if (inpC && Math.abs(num(inpC.value) - num(imp.comision)) > 0.009) {
+            if (window.ERP && ERP.setInputNumero) ERP.setInputNumero(inpC, imp.comision || 0);
+            else inpC.value = fmtN(imp.comision || 0);
+        }
+    });
+    actualizarThSaldos();
+}
+
+function onClienteChange() {
+    const id = document.getElementById('cliente_id').value;
+    const ok = !!id;
+    document.getElementById('btnImputar').disabled = !ok;
+    document.getElementById('btnAgregarPedidos').disabled = !ok;
+    document.getElementById('btnAgregarPedidos').style.display = imputaciones.length ? 'inline-block' : 'none';
+}
+
+function idsImputados() {
+    return imputaciones.map(i => i.pedido_id).join(',');
+}
+
+function abrirModalImputar(soloAgregar) {
+    modoAgregarPedidos = !!soloAgregar;
+    const id = document.getElementById('cliente_id').value;
+    if (!id) return;
+    let url = `/api/cliente/${id}/pedidos-pendientes?excluir_pedidos=${idsImputados()}`;
+    if (COBRANZA_ID) url += `&excluir_cobranza_id=${COBRANZA_ID}`;
+    fetch(url).then(r => r.json()).then(pedidos => {
+        pedidosModalCache = pedidos;
+        renderTablaModal(pedidos);
+        document.getElementById('modalImputar').style.display = 'flex';
+    });
+}
+
+function detalleLineasHtml(p) {
+    const lineas = p.lineas || [];
+    if (!lineas.length) return '<p style="margin:0;color:#a0aec0;">Sin detalle de productos.</p>';
+    let h = '<table><thead><tr><th>Proveedor</th><th>Fruta</th><th>Variedad</th><th>Clasif.</th><th>Marca</th></tr></thead><tbody>';
+    lineas.forEach(ln => {
+        h += `<tr><td>${ln.proveedor || '—'}</td><td>${ln.fruta || '—'}</td><td>${ln.variedad || '—'}</td><td>${ln.clasificacion || '—'}</td><td>${ln.marca || '—'}</td></tr>`;
+    });
+    return h + '</tbody></table>';
+}
+
+function toggleDetallePedido(idx) {
+    const det = document.getElementById('det-ped-' + idx);
+    const btn = document.getElementById('btn-exp-' + idx);
+    if (!det) return;
+    const open = det.classList.toggle('open');
+    btn.textContent = open ? '−' : '+';
+}
+
+function renderTablaModal(pedidos) {
+    const cont = document.getElementById('listaPedidosPendientes');
+    if (!pedidos.length) {
+        cont.innerHTML = '<p style="padding:20px;color:#718096;text-align:center;">No hay más pedidos con saldo pendiente para este cliente.</p>';
+        document.getElementById('totalesModal').style.display = 'none';
+        return;
+    }
+    let html = '<ul class="lista-pedidos-modal">';
+    pedidos.forEach((p, idx) => {
+        const fechaFmt = p.fecha ? p.fecha.split('-').reverse().join('/') : '—';
+        html += `<li class="pedido-modal-item" id="item-ped-${idx}" data-idx="${idx}">
+            <div class="pedido-modal-head">
+                <button type="button" class="btn-exp" id="btn-exp-${idx}" onclick="event.stopPropagation();toggleDetallePedido(${idx})">+</button>
+                <input type="checkbox" class="chk-ped" data-idx="${idx}" onchange="actualizarSeleccionModal()" onclick="event.stopPropagation()">
+                <div style="flex:1;min-width:0;">
+                    <strong>Pedido ${p.numero}</strong>
+                    <span style="color:#718096;margin-left:10px;font-size:12px;">${fechaFmt}</span>
+                </div>
+                <div style="text-align:right;font-size:12px;white-space:nowrap;">
+                    <span style="color:#c53030;">Prov: ${fmt(p.saldo_proveedor)}</span>
+                    <span style="margin-left:12px;color:#d69e2e;">Com: ${fmt(p.saldo_comision)}</span>
+                </div>
+            </div>
+            <div class="pedido-modal-detalle" id="det-ped-${idx}">${detalleLineasHtml(p)}</div>
+        </li>`;
+    });
+    html += '</ul>';
+    cont.innerHTML = html;
+    document.getElementById('totalesModal').style.display = 'grid';
+    actualizarSeleccionModal();
+}
+
+function actualizarSeleccionModal() {
+    let cnt = 0, sp = 0, sc = 0;
+    document.querySelectorAll('.chk-ped:checked').forEach(chk => {
+        const p = pedidosModalCache[parseInt(chk.dataset.idx)];
+        if (!p) return;
+        cnt++;
+        sp += p.saldo_proveedor;
+        sc += p.saldo_comision;
+        const item = document.getElementById('item-ped-' + chk.dataset.idx);
+        if (item) item.classList.add('seleccionada');
+    });
+    document.querySelectorAll('.chk-ped:not(:checked)').forEach(chk => {
+        const item = document.getElementById('item-ped-' + chk.dataset.idx);
+        if (item) item.classList.remove('seleccionada');
+    });
+    document.getElementById('cntSeleccion').textContent = cnt;
+    document.getElementById('sumSaldoProv').textContent = fmt(sp);
+    document.getElementById('sumSaldoCom').textContent = fmt(sc);
+    document.getElementById('sumSaldoTotal').textContent = fmt(sp + sc);
+}
+
+function cerrarModal() {
+    document.getElementById('modalImputar').style.display = 'none';
+    modoAgregarPedidos = false;
+}
+
+function aceptarImputaciones() {
+    const nuevas = [];
+    document.querySelectorAll('.chk-ped:checked').forEach(chk => {
+        const p = pedidosModalCache[parseInt(chk.dataset.idx)];
+        if (!p || imputaciones.find(i => i.pedido_id === p.id)) return;
+        nuevas.push({
+            pedido_id: p.id,
+            numero: p.numero,
+            fecha: p.fecha,
+            fecha_venta_ts: p.fecha_venta_ts || 0,
+            costo_total: p.costo_total,
+            rtdo_comision: p.rtdo_comision,
+            proveedores: p.proveedores,
+            resumen_frutas: p.resumen_frutas,
+            max_proveedor: p.saldo_proveedor,
+            max_comision: p.saldo_comision,
+            pago_proveedor: 0,
+            comision: 0,
+        });
+    });
+    if (!nuevas.length && modoAgregarPedidos) {
+        alert('Seleccione al menos un pedido.');
+        return;
+    }
+    if (modoAgregarPedidos) {
+        imputaciones = imputaciones.concat(nuevas);
+    } else {
+        imputaciones = nuevas;
+    }
+    ordenarImputaciones();
+    cerrarModal();
+    actualizarTotales();
+    onClienteChange();
+}
+
+function ordenarImputaciones() {
+    imputaciones.sort((a, b) => (a.fecha_venta_ts || 0) - (b.fecha_venta_ts || 0) || a.pedido_id - b.pedido_id);
+}
+
+function quitarImputacion(idx) {
+    imputaciones.splice(idx, 1);
+    actualizarTotales();
+    onClienteChange();
+}
+
+function cambiarImporte(idx, campo, valor, inputEl) {
+    const v = Math.max(0, num(valor));
+    const imp = imputaciones[idx];
+    const maxPerm = maxPermitidoImporte(idx, campo);
+    imp[campo] = Math.min(v, maxPerm);
+    if (inputEl && Math.abs(num(inputEl.value) - imp[campo]) > 0.009) {
+        if (window.ERP && ERP.setInputNumero) ERP.setInputNumero(inputEl, imp[campo]);
+        else inputEl.value = fmtN(imp[campo]);
+    }
+    actualizarTotales(false);
+}
+
+function restanteProv(imp) {
+    return Math.max(0, (imp.max_proveedor || 0) - num(imp.pago_proveedor));
+}
+function restanteCom(imp) {
+    return Math.max(0, (imp.max_comision || 0) - num(imp.comision));
+}
+
+function haySaldoRestanteProv() {
+    return imputaciones.some(imp => restanteProv(imp) >= 0.01);
+}
+function haySaldoRestanteCom() {
+    return imputaciones.some(imp => restanteCom(imp) >= 0.01);
+}
+
+function actualizarThSaldos() {
+    const thP = document.querySelector('#imputacionesContainer th[data-th-saldo="prov"]');
+    const thC = document.querySelector('#imputacionesContainer th[data-th-saldo="com"]');
+    if (thP) thP.className = haySaldoRestanteProv() ? 'th-saldo-pend' : 'th-saldo-cero';
+    if (thC) thC.className = haySaldoRestanteCom() ? 'th-saldo-pend' : 'th-saldo-cero';
+}
+
+function renderImputaciones() {
+    const c = document.getElementById('imputacionesContainer');
+    const sin = document.getElementById('sinImputaciones');
+    if (!imputaciones.length) {
+        c.innerHTML = SOLO_LECTURA ? '<p style="color:#718096;margin:0;">Sin imputaciones.</p>' : '';
+        if (sin) sin.style.display = 'block';
+        return;
+    }
+    if (sin) sin.style.display = 'none';
+    ordenarImputaciones();
+    const clsThP = haySaldoRestanteProv() ? 'th-saldo-pend' : 'th-saldo-cero';
+    const clsThC = haySaldoRestanteCom() ? 'th-saldo-pend' : 'th-saldo-cero';
+    let html = `<table class="tabla-imp-form"><thead><tr>
+        <th>Pedido</th><th>Fecha</th><th>Proveedor</th><th>Detalle</th>
+        <th style="text-align:right">Costo total</th><th style="text-align:right">Rtdo/Com.</th>
+        <th class="th-ingreso">Pago proveedor</th><th class="th-ingreso">Comisión</th>
+        <th class="${clsThP}" data-th-saldo="prov">Saldo rest. prov.</th>
+        <th class="${clsThC}" data-th-saldo="com">Saldo rest. com.</th>
+        ${SOLO_LECTURA ? '' : '<th></th>'}
+    </tr></thead><tbody>`;
+    imputaciones.forEach((imp, j) => {
+        const rp = restanteProv(imp);
+        const rc = restanteCom(imp);
+        const clsP = rp < 0.01 ? 'saldo-resto-cero' : 'saldo-resto-pend';
+        const clsC = rc < 0.01 ? 'saldo-resto-cero' : 'saldo-resto-pend';
+        const fechaFmt = imp.fecha ? imp.fecha.split('-').slice(0,3).reverse().join('/') : '—';
+        const pedidoId = imp.pedido_id || imp.id;
+        html += `<tr>
+            <td><input type="hidden" name="imp_pedido_id_${j}" value="${pedidoId}">
+            <strong>${imp.numero}</strong></td>
+            <td>${fechaFmt}</td>
+            <td>${imp.proveedores || '—'}</td>
+            <td style="font-size:11px;">${imp.resumen_frutas || '—'}</td>
+            <td style="text-align:right">${fmt(imp.costo_total)}</td>
+            <td style="text-align:right">${fmt(imp.rtdo_comision)}</td>
+            <td class="celda-ingreso"><input type="text" class="inp-imp inp-imp-ingreso" data-numero name="imp_pago_proveedor_${j}"
+                value="${fmtN(imp.pago_proveedor || 0)}" ${SOLO_LECTURA ? 'readonly tabindex="-1"' : `oninput="cambiarImporte(${j},'pago_proveedor',this.value,this)"`}></td>
+            <td class="celda-ingreso"><input type="text" class="inp-imp inp-imp-ingreso" data-numero name="imp_comision_${j}"
+                value="${fmtN(imp.comision || 0)}" ${SOLO_LECTURA ? 'readonly tabindex="-1"' : `oninput="cambiarImporte(${j},'comision',this.value,this)"`}></td>
+            <td style="text-align:right" data-saldo="prov" class="${clsP}">${fmt(rp)}</td>
+            <td style="text-align:right" data-saldo="com" class="${clsC}">${fmt(rc)}</td>
+            ${SOLO_LECTURA ? '' : `<td><button type="button" class="btn btn-danger" style="padding:6px 10px;font-size:11px;" onclick="quitarImputacion(${j})">✕</button></td>`}
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    c.innerHTML = html;
+    if (window.ERP) ERP.initInputsNumeroAr(c);
+}
+
+if (!SOLO_LECTURA) {
+document.getElementById('formCobranza').addEventListener('submit', function(e) {
+    if (window.ERP) ERP.normalizarInputsFormulario(e.target);
+    const tc = [...document.querySelectorAll('.monto-linea')].reduce((s, inp) => {
+        return s + (window.ERP ? ERP.getInputNumero(inp) : num(inp.value));
+    }, 0);
+    const ti = totalImputadoCalc();
+    if (ti.total > tc + 0.01) {
+        e.preventDefault();
+        alert(`No se puede guardar: imputaste ${fmt(ti.total)} pero solo cobraste ${fmt(tc)}. Distribuí como máximo ${fmt(tc)} entre pago proveedor y comisión.`);
+        return;
+    }
+    for (const imp of imputaciones) {
+        if (num(imp.pago_proveedor) > (imp.max_proveedor||0) + 0.01 ||
+            num(imp.comision) > (imp.max_comision||0) + 0.01) {
+            e.preventDefault();
+            alert(`Pedido ${imp.numero}: los importes superan el saldo disponible.`);
+            return;
+        }
+    }
+});
+}
+
+if (!SOLO_LECTURA) onClienteChange();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        if (SOLO_LECTURA) renderImputaciones();
+        else actualizarTotales();
+    });
+} else {
+    if (SOLO_LECTURA) renderImputaciones();
+    else actualizarTotales();
+}
+</script>
 {% endblock %}
